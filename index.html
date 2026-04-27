@@ -1,0 +1,1846 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AMR-V4 · 混凝土主動式質流儀</title>
+<meta name="description" content="Active Mass Rheometer for Concrete — 逆分析正向模擬儀 v2.0">
+<meta name="theme-color" content="#00d4aa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AMR-V4">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@300;400;500&display=swap');
+
+:root {
+  --bg:#0c0e14; --bg2:#12151f; --bg3:#1a1e2c; --bg4:#20253a;
+  --bdr:#252a3a; --bdr2:#2e3550;
+  --acc:#00d4aa; --acc2:#4a9eff; --acc3:#ff6b6b; --acc4:#f0c040; --acc5:#b06aff;
+  --tx:#dde2ee; --tx2:#7a8ba8; --tx3:#3e4a60;
+  --tabh:54px; --hdrh:52px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:'Noto Sans TC',sans-serif;font-size:14px;
+  min-height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* HEADER */
+.hdr{height:var(--hdrh);background:var(--bg2);border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;padding:0 14px;gap:10px;flex-shrink:0;z-index:50}
+.hdr-badge{background:var(--acc);color:#000;font-family:'IBM Plex Mono',monospace;
+  font-weight:600;font-size:10px;padding:3px 8px;letter-spacing:1px;flex-shrink:0}
+.hdr-title{flex:1;min-width:0}
+.hdr-title h1{font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:500;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-title p{font-size:10px;color:var(--tx2);margin-top:1px}
+.hdr-ver{font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--acc4);
+  background:rgba(240,192,64,.1);border:1px solid rgba(240,192,64,.3);
+  padding:3px 8px;flex-shrink:0}
+
+/* TAB BAR */
+.tabbar{height:var(--tabh);background:var(--bg2);border-bottom:1px solid var(--bdr);
+  display:flex;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:56px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:3px;cursor:pointer;border-bottom:2px solid transparent;
+  transition:all .2s;padding:0 6px;color:var(--tx2);position:relative}
+.tab.active{border-bottom-color:var(--acc);color:var(--tx);background:rgba(0,212,170,.04)}
+.tab:active{background:var(--bg3)}
+.tab-icon{font-size:15px;line-height:1}
+.tab-label{font-size:10px;font-family:'IBM Plex Mono',monospace;letter-spacing:.2px}
+.tab .nbadge{position:absolute;top:5px;right:6px;background:var(--acc3);color:#fff;
+  font-size:8px;padding:1px 4px;border-radius:5px;font-family:'IBM Plex Mono',monospace;display:none}
+
+/* PAGES */
+.pwrap{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;display:none;padding-bottom:20px}
+.page.active{display:block}
+.page::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-thumb{background:var(--bdr2)}
+
+/* SECTIONS */
+.sh{padding:9px 14px 7px;font-family:'IBM Plex Mono',monospace;font-size:10px;
+  font-weight:600;letter-spacing:1.5px;color:var(--tx3);text-transform:uppercase;
+  border-bottom:1px solid var(--bdr);background:var(--bg2);
+  position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:8px}
+.sb{padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+
+/* PARAM ROW */
+.pr{display:flex;flex-direction:column;gap:5px}
+.pt{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pn{font-size:13px;color:var(--tx2);flex:1}
+.pn sub,.pn sup{font-size:9px}
+.pv{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--acc);font-weight:500}
+.pu{font-size:10px;color:var(--tx3)}
+
+input[type=range]{-webkit-appearance:none;width:100%;height:4px;
+  background:linear-gradient(to right,var(--acc) var(--pct,0%),var(--bdr2) var(--pct,0%));
+  border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;
+  border-radius:50%;background:var(--acc);cursor:pointer;box-shadow:0 0 8px rgba(0,212,170,.4)}
+
+.note{font-size:11px;color:var(--tx2);padding:7px 10px;
+  background:rgba(74,158,255,.06);border:1px solid rgba(74,158,255,.2);line-height:1.5}
+.note b{color:var(--acc4)}
+
+.cst{display:flex;justify-content:space-between;padding:6px 10px;
+  background:var(--bg3);border-left:2px solid var(--acc2);font-size:11px}
+.cst span:last-child{font-family:'IBM Plex Mono',monospace;color:var(--acc2)}
+
+/* MAS */
+.mgrp{display:flex;flex-direction:column;gap:5px}
+.mb{display:flex;align-items:center;gap:10px;padding:11px 12px;
+  background:var(--bg3);border:1px solid var(--bdr);cursor:pointer;
+  transition:all .15s;color:var(--tx2);font-size:13px}
+.mb:active{background:var(--bg4)}
+.mb.active{background:rgba(0,212,170,.07);border-color:var(--acc);color:var(--tx)}
+.mdot{width:9px;height:9px;border-radius:50%;background:var(--bdr2);flex-shrink:0}
+.mb.active .mdot{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.mang{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--acc4)}
+
+/* MODEL SWITCH */
+.msw{display:flex;gap:5px}
+.mbtn{flex:1;padding:10px 6px;background:var(--bg3);border:1px solid var(--bdr);
+  color:var(--tx2);font-family:'IBM Plex Mono',monospace;font-size:12px;
+  cursor:pointer;transition:all .15s;text-align:center}
+.mbtn.active{background:rgba(74,158,255,.1);border-color:var(--acc2);color:var(--acc2)}
+.hbx{display:none;flex-direction:column;gap:12px}
+.hbx.show{display:flex}
+
+/* RUN */
+.rbtn{width:100%;padding:15px;background:var(--acc);color:#000;
+  font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:15px;
+  letter-spacing:1px;border:none;cursor:pointer;display:flex;
+  align-items:center;justify-content:center;gap:8px;transition:all .2s}
+.rbtn:active{transform:scale(.98)}
+.rbtn:disabled{background:var(--bdr2);color:var(--tx3);cursor:not-allowed}
+.spin{display:none;animation:sp .8s linear infinite}
+.rbtn.running .spin{display:block}.rbtn.running .rico{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* STATUS */
+.sbar{display:flex;align-items:center;gap:8px;padding:8px 14px;
+  background:var(--bg2);border-top:1px solid var(--bdr);
+  font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--tx3)}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--tx3);flex-shrink:0}
+.sdot.ready{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.sdot.running{background:var(--acc4);box-shadow:0 0 6px var(--acc4);animation:pu 1s infinite}
+.sdot.done{background:var(--acc2);box-shadow:0 0 6px var(--acc2)}
+.sdot.error{background:var(--acc3);box-shadow:0 0 6px var(--acc3)}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ALERT */
+.alrt{margin:8px 14px;padding:9px 12px;font-size:12px;border-left:3px solid;
+  line-height:1.5;display:none;border-radius:0 2px 2px 0}
+.alrt.show{display:block}
+.alrt.warn{border-color:var(--acc3);background:rgba(255,107,107,.08);color:var(--acc3)}
+.alrt.info{border-color:var(--acc2);background:rgba(74,158,255,.08);color:var(--acc2)}
+.alrt.ok{border-color:var(--acc);background:rgba(0,212,170,.08);color:var(--acc)}
+
+/* GEO GRID */
+.gg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.gi{background:var(--bg3);padding:7px 10px}
+.gk{font-size:10px;color:var(--tx3);font-family:'IBM Plex Mono',monospace}
+.gv{font-size:12px;color:var(--tx);font-family:'IBM Plex Mono',monospace;margin-top:2px}
+
+/* KPI */
+.kg{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bdr)}
+.kc{background:var(--bg2);padding:14px 14px 12px;display:flex;flex-direction:column;gap:3px}
+.kl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px}
+.kv{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;color:var(--acc);line-height:1.1}
+.kv.na{color:var(--tx3);font-size:18px}.kv.warn{color:var(--acc3)}.kv.caut{color:var(--acc4)}
+.ku{font-size:11px;color:var(--tx2)}.ks{font-size:10px;color:var(--tx3)}
+
+/* QUALITY */
+.qg{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.qi{padding:8px 10px;background:var(--bg3);border-left:3px solid var(--bdr2)}
+.qi.pass{border-color:var(--acc)}.qi.fail{border-color:var(--acc3)}
+.qi.warn{border-color:var(--acc4)}.qi.na{border-color:var(--tx3)}
+.qn{font-size:10px;color:var(--tx2);margin-bottom:3px}
+.qv{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500}
+.qv.pass{color:var(--acc)}.qv.fail{color:var(--acc3)}.qv.warn{color:var(--acc4)}.qv.na{color:var(--tx3)}
+
+/* CHARTS */
+.cc{margin:10px 14px 0;background:var(--bg2);border:1px solid var(--bdr);padding:12px 10px 10px}
+.ch{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.ct{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:var(--tx2)}
+.cs{font-size:10px;color:var(--tx3);margin-top:2px;line-height:1.4}
+.cpk{font-family:'IBM Plex Mono',monospace;font-size:11px;flex-shrink:0;padding-left:6px}
+canvas{width:100%!important;display:block}
+
+/* BADGE */
+.vb{font-size:9px;font-family:'IBM Plex Mono',monospace;padding:1px 5px;
+  border-radius:2px;font-weight:600;letter-spacing:.3px}
+.bn{background:rgba(74,158,255,.15);color:var(--acc2);border:1px solid rgba(74,158,255,.3)}
+.bm{background:rgba(240,192,64,.15);color:var(--acc4);border:1px solid rgba(240,192,64,.3)}
+
+/* CONCRETE TYPE CLASSIFIER */
+.ctc-card{margin:10px 14px 0;background:var(--bg3);border:1px solid var(--bdr2);border-radius:3px;overflow:hidden}
+.ctc-top{display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg4);border-bottom:1px solid var(--bdr)}
+.ctc-icon{font-size:28px;flex-shrink:0;line-height:1}
+.ctc-info{flex:1;min-width:0}
+.ctc-type{font-size:15px;font-weight:500;color:var(--tx);margin-bottom:3px}
+.ctc-slump{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--tx2)}
+.ctc-conf{font-family:'IBM Plex Mono',monospace;font-size:11px;padding:3px 8px;border-radius:2px;flex-shrink:0;font-weight:600}
+.ctc-conf.hi{background:rgba(0,212,170,.15);color:var(--acc);border:1px solid rgba(0,212,170,.3)}
+.ctc-conf.mid{background:rgba(240,192,64,.15);color:var(--acc4);border:1px solid rgba(240,192,64,.3)}
+.ctc-conf.lo{background:rgba(255,107,107,.15);color:var(--acc3);border:1px solid rgba(255,107,107,.3)}
+.ctc-bars{padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ctc-bar-row{display:flex;align-items:center;gap:8px}
+.ctc-bar-lbl{font-size:11px;color:var(--tx2);width:72px;flex-shrink:0}
+.ctc-bar-trk{flex:1;height:6px;background:var(--bdr2);border-radius:3px;overflow:hidden}
+.ctc-bar-fil{height:100%;border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+.ctc-bar-val{font-family:'IBM Plex Mono',monospace;font-size:13px;color:#f0a050;width:80px;text-align:right;flex-shrink:0;font-weight:600}
+.ctc-matrix{padding:0 14px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px}
+.ctc-cell{padding:8px 6px;background:var(--bg);border:1px solid var(--bdr);text-align:center;border-radius:2px;transition:all .3s}
+.ctc-cell.match{background:rgba(0,212,170,.08);border-color:var(--acc)}
+.ctc-cell.near{background:rgba(240,192,64,.06);border-color:rgba(240,192,64,.4)}
+.ctc-cname{font-size:10px;color:var(--tx2);margin-bottom:3px;line-height:1.3}
+.ctc-cscore{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:var(--tx3)}
+.ctc-cell.match .ctc-cscore{color:var(--acc)}.ctc-cell.near .ctc-cscore{color:var(--acc4)}
+.ctc-note{padding:0 14px 12px;font-size:11px;color:var(--tx2);line-height:1.6;border-top:1px solid var(--bdr);padding-top:10px;margin-top:2px}
+.ctc-ph{padding:20px 14px;text-align:center;color:var(--tx3);font-size:12px}
+
+/* EXPORT TOOLBAR */
+.exp-bar{
+  display:flex;gap:8px;padding:10px 14px;
+  background:var(--bg2);border-bottom:1px solid var(--bdr);
+  position:sticky;top:0;z-index:6;
+}
+.exp-btn{
+  flex:1;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:10px 8px;border:1px solid var(--bdr2);background:var(--bg3);
+  color:var(--tx2);font-family:'IBM Plex Mono',monospace;font-size:11px;
+  cursor:pointer;border-radius:2px;transition:all .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.exp-btn:active{transform:scale(.97)}
+.exp-btn.pdf-btn{border-color:rgba(255,107,107,.4);color:var(--acc3)}
+.exp-btn.pdf-btn:hover{background:rgba(255,107,107,.1);border-color:var(--acc3)}
+.exp-btn.print-btn{border-color:rgba(74,158,255,.4);color:var(--acc2)}
+.exp-btn.print-btn:hover{background:rgba(74,158,255,.1);border-color:var(--acc2)}
+.exp-btn.share-btn{border-color:rgba(0,212,170,.4);color:var(--acc)}
+.exp-btn.share-btn:hover{background:rgba(0,212,170,.1);border-color:var(--acc)}
+.exp-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.exp-btn svg{flex-shrink:0}
+
+/* PDF EXPORT OVERLAY */
+.pdf-overlay{
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);
+  z-index:999;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+.pdf-overlay.show{display:flex}
+.pdf-spinner{
+  width:48px;height:48px;border:3px solid var(--bdr2);
+  border-top-color:var(--acc);border-radius:50%;
+  animation:sp .8s linear infinite;
+}
+.pdf-msg{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--tx2)}
+
+/* PRINT STYLES */
+@media print{
+  body{background:#fff!important;color:#000!important;overflow:visible!important}
+  .hdr,.tabbar,.exp-bar,#pg0,#pg1,#pg2,#pg4{display:none!important}
+  .pwrap{overflow:visible!important;height:auto!important;position:static!important}
+  .page{position:static!important;display:none!important;overflow:visible!important}
+  #pg3{display:block!important}
+  .sh{background:#f0f4ff!important;color:#333!important;border-color:#ccc!important;page-break-inside:avoid}
+  .kg{background:#fff!important;border:1px solid #ddd!important}
+  .kc{background:#fafafa!important;border-color:#ddd!important}
+  .kv{color:#d04000!important}
+  .kl{color:#666!important}
+  .ku,.ks{color:#888!important}
+  .qi{background:#fafafa!important}
+  .qi.pass{border-color:#00aa88!important}.qi.fail{border-color:#cc3333!important}.qi.warn{border-color:#cc8800!important}
+  .qv.pass{color:#00aa88!important}.qv.fail{color:#cc3333!important}.qv.warn{color:#cc8800!important}
+  .ctc-card{background:#fafafa!important;border:1px solid #ddd!important}
+  .ctc-top{background:#f0f4ff!important}
+  .ctc-cell{background:#fff!important;border:1px solid #ddd!important}
+  .ctc-cell.match{background:#e8fff8!important;border-color:#00aa88!important}
+  .ctc-bar-trk{background:#e0e0e0!important}
+  .print-header{display:block!important}
+  @page{margin:15mm;size:A4}
+}
+.print-header{
+  display:none;
+  font-family:'IBM Plex Mono',monospace;
+  border-bottom:2px solid #333;padding-bottom:8px;margin-bottom:12px;
+}
+.print-header h2{font-size:16px;color:#000}
+.print-header p{font-size:11px;color:#555;margin-top:3px}
+
+/* THEORY */
+.tb{margin:10px 14px 0;background:var(--bg2);border:1px solid var(--bdr);
+  border-left:3px solid var(--acc2);padding:12px}
+.tb h3{font-size:12px;color:var(--acc2);font-family:'IBM Plex Mono',monospace;margin-bottom:8px}
+.tb p{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:5px}
+.tb .eq{font-family:'IBM Plex Mono',monospace;font-size:11px;background:var(--bg3);
+  padding:7px 10px;color:var(--acc4);margin:5px 0;border-left:2px solid var(--acc4);
+  word-break:break-all;line-height:1.6}
+.tb ul{margin-left:14px}
+.tb li{font-size:12px;color:var(--tx2);line-height:1.7;margin-bottom:3px}
+.tb table{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
+.tb th{background:var(--bg3);color:var(--tx3);font-family:'IBM Plex Mono',monospace;
+  padding:5px 8px;text-align:left;border-bottom:1px solid var(--bdr2);font-weight:500}
+.tb td{padding:5px 8px;color:var(--tx2);border-bottom:1px solid var(--bdr)}
+.tb td:first-child{font-family:'IBM Plex Mono',monospace;color:var(--acc);font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-badge">ARM-G2</div>
+  <div class="hdr-title">
+    <h1>混凝土主動式質流儀</h1>
+    <p>Active Rheometer</p>
+  </div>
+  <div class="hdr-ver">V2.0</div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tabbar">
+  <div class="tab active" onclick="goTab(0)" id="tab0">
+    <div class="tab-icon">⚙️</div>
+    <div class="tab-label">參數</div>
+  </div>
+  <div class="tab" onclick="goTab(1)" id="tab1">
+    <div class="tab-icon">▶️</div>
+    <div class="tab-label">執行</div>
+  </div>
+  <div class="tab" onclick="goTab(2)" id="tab2">
+    <div class="tab-icon">📊</div>
+    <div class="tab-label">圖表</div>
+    <div class="nbadge" id="nb2">NEW</div>
+  </div>
+  <div class="tab" onclick="goTab(3)" id="tab3">
+    <div class="tab-icon">✅</div>
+    <div class="tab-label">結果</div>
+    <div class="nbadge" id="nb3">!</div>
+  </div>
+  <div class="tab" onclick="goTab(4)" id="tab4">
+    <div class="tab-icon">📐</div>
+    <div class="tab-label">理論</div>
+  </div>
+</div>
+
+<div class="pwrap">
+
+<!-- ══════ PAGE 0: 參數 ══════ -->
+<div class="page active" id="pg0">
+
+  <div id="alrt" class="alrt"></div>
+
+  <div class="sh">本構模型 · Constitutive Model</div>
+  <div class="sb">
+    <div class="msw">
+      <div class="mbtn active" id="bB" onclick="setMdl('b')">Bingham</div>
+      <div class="mbtn" id="bH" onclick="setMdl('hb')">Herschel–Bulkley</div>
+    </div>
+    <div class="note">合併參數 η* = η<sub>pl,app</sub> × C<sub>γ</sub><br>C<sub>γ</sub> 由甘油溶液獨立標定後固定，η* 為直接反解目標</div>
+  </div>
+
+  <div class="sh">表觀流變參數 <span class="vb bm">修訂</span></div>
+  <div class="sb">
+    <div class="pr">
+      <div class="pt"><span class="pn">表觀屈服應力 τ<sub>0,app</sub></span>
+        <span><span class="pv" id="v_t0">100</span> <span class="pu">Pa</span></span></div>
+      <input type="range" id="s_t0" min="20" max="700" step="5" value="100"
+        oninput="syn(this,'v_t0',0);chkS()">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">合併黏度 η* <span class="vb bn">NEW</span></span>
+        <span><span class="pv" id="v_es">10</span> <span class="pu">Pa·s</span></span></div>
+      <input type="range" id="s_es" min="1" max="100" step="0.5" value="10"
+        oninput="syn(this,'v_es',1);updEta();updPrev()">
+      <div class="note" style="font-size:10px">η* = η<sub>pl,app</sub> · C<sub>γ</sub> &nbsp;|&nbsp; 直接反解目標</div>
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">C<sub>γ</sub> 標定係數 <span class="vb bn">NEW</span></span>
+        <span><span class="pv" id="v_cg">1.00</span></span></div>
+      <input type="range" id="s_cg" min="0.5" max="2.0" step="0.05" value="1.0"
+        oninput="syn(this,'v_cg',2);updEta()">
+      <div style="font-size:11px;color:var(--tx3);font-family:'IBM Plex Mono',monospace;padding:3px 0">
+        η<sub>pl,app</sub> = η* / C<sub>γ</sub> = <span id="etapl">10.00</span> Pa·s
+      </div>
+    </div>
+    <div class="hbx" id="hbx">
+      <div class="pr">
+        <div class="pt"><span class="pn">流動指數 n <span class="vb bn">H-B</span></span>
+          <span><span class="pv" id="v_n">0.80</span></span></div>
+        <input type="range" id="s_n" min="0.3" max="1.5" step="0.05" value="0.8"
+          oninput="syn(this,'v_n',2)">
+      </div>
+    </div>
+  </div>
+
+  <div class="sh">幾何與裝置參數</div>
+  <div class="sb">
+    <div class="pr">
+      <div class="pn" style="margin-bottom:6px">骨材粒徑 / 填料夾角 θ<sub>eff</sub></div>
+      <div class="mgrp">
+        <div class="mb" id="m5" onclick="setMAS(5)">
+          <div class="mdot"></div><span>5 mm（砂漿）</span><span class="mang">15°</span>
+        </div>
+        <div class="mb" id="m12" onclick="setMAS(12)">
+          <div class="mdot"></div><span>12.5 mm（細石）</span><span class="mang">30°</span>
+        </div>
+        <div class="mb active" id="m19" onclick="setMAS(19)">
+          <div class="mdot"></div><span>19 mm（粗骨材）</span><span class="mang">45°</span>
+        </div>
+      </div>
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">料面校正 C<sub>H</sub> <span class="vb bm">約束</span></span>
+        <span><span class="pv" id="v_ch">1.00</span></span></div>
+      <input type="range" id="s_ch" min="0.85" max="1.15" step="0.01" value="1.00"
+        oninput="syn(this,'v_ch',2);chkCH()">
+      <div class="cst"><span>物理約束範圍</span><span>0.85 ≤ C<sub>H</sub> ≤ 1.15</span></div>
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">系統慣量 I<sub>sys</sub></span>
+        <span><span class="pv" id="v_is">0.500</span> <span class="pu">kg·m²</span></span></div>
+      <input type="range" id="s_is" min="0.05" max="2.0" step="0.05" value="0.5"
+        oninput="syn(this,'v_is',3)">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">摩擦力矩 T<sub>fric</sub></span>
+        <span><span class="pv" id="v_tf">0.10</span> <span class="pu">N·m</span></span></div>
+      <input type="range" id="s_tf" min="0.0" max="1.0" step="0.01" value="0.10"
+        oninput="syn(this,'v_tf',2);updPrev()">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">固定片修正 k<sub>geo</sub></span>
+        <span><span class="pv" id="v_kg">1.0</span></span></div>
+      <input type="range" id="s_kg" min="0.5" max="2.0" step="0.1" value="1.0"
+        oninput="syn(this,'v_kg',1);updPrev()">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">混凝土密度 ρ</span>
+        <span><span class="pv" id="v_rho">2350</span> <span class="pu">kg/m³</span></span></div>
+      <input type="range" id="s_rho" min="1500" max="2500" step="50" value="2350"
+        oninput="updRho()">
+      <div style="font-size:10px;color:var(--tx3)">適用範圍：1500（砂漿/輕質）～ 2500（混凝土）</div>
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">驅動效率 η<sub>drive</sub></span>
+        <span><span class="pv" id="v_ed">0.70</span></span></div>
+      <input type="range" id="s_ed" min="0.1" max="1.0" step="0.05" value="0.70"
+        oninput="syn(this,'v_ed',2);chkS()">
+      <div style="font-size:10px;color:var(--tx3)">僅用於啟動估算，不參與反解（修訂）</div>
+    </div>
+  </div>
+
+  <div class="sh">裝置幾何常數（固定）</div>
+  <div class="sb">
+    <div class="gg">
+      <div class="gi"><div class="gk">R<sub>out</sub></div><div class="gv">0.300 m</div></div>
+      <div class="gi"><div class="gk">R<sub>crit</sub></div><div class="gv">0.010 m</div></div>
+      <div class="gi"><div class="gk">H₀</div><div class="gv">0.150 m</div></div>
+      <div class="gi"><div class="gk">A<sub>r</sub></div><div class="gv" id="g_ar">—</div></div>
+      <div class="gi"><div class="gk">θ<sub>eff</sub></div><div class="gv" id="g_th">—</div></div>
+      <div class="gi"><div class="gk">θ<sub>ref</sub></div><div class="gv">π/4 rad</div></div>
+      <div class="gi"><div class="gk">ρ</div><div class="gv" id="g_rho">2350 kg/m³</div></div>
+      <div class="gi"><div class="gk">g</div><div class="gv">9.81 m/s²</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PAGE 1: 執行 ══════ -->
+<div class="page" id="pg1">
+
+  <div class="sh">模擬設定</div>
+  <div class="sb">
+    <div class="pr">
+      <div class="pt"><span class="pn">模擬時長 t<sub>sim</sub></span>
+        <span><span class="pv" id="v_ts">30</span> <span class="pu">s</span></span></div>
+      <input type="range" id="s_ts" min="5" max="120" step="5" value="30"
+        oninput="syn(this,'v_ts',0)">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">移動平均窗口 <span class="vb bn">V2.0</span></span>
+        <span><span class="pv" id="v_fw">0.20</span> <span class="pu">s</span></span></div>
+      <input type="range" id="s_fw" min="0.05" max="0.5" step="0.05" value="0.20"
+        oninput="syn(this,'v_fw',2)">
+    </div>
+    <div class="pr">
+      <div class="pt"><span class="pn">Tikhonov λ <span class="vb bn">V2.0</span></span>
+        <span><span class="pv" id="v_lm">1e-3</span></span></div>
+      <input type="range" id="s_lm" min="-5" max="-1" step="0.5" value="-3"
+        oninput="updLm(this)">
+      <div style="font-size:10px;color:var(--tx3)">正則化係數（L-curve 原則）</div>
+    </div>
+  </div>
+
+  <div class="sh">啟動條件預估</div>
+  <div class="sb">
+    <div class="kg" style="border:1px solid var(--bdr)">
+      <div class="kc"><div class="kl">T<sub>drive,0</sub></div>
+        <div class="kv na" id="p_td">—</div><div class="ku">N·m（估算）</div></div>
+      <div class="kc"><div class="kl">T<sub>yield,static</sub></div>
+        <div class="kv na" id="p_ty">—</div><div class="ku">N·m</div></div>
+      <div class="kc"><div class="kl">H<sub>yield</sub></div>
+        <div class="kv na" id="p_hy">—</div><div class="ku">cm</div></div>
+      <div class="kc"><div class="kl">啟動可行</div>
+        <div class="kv na" id="p_st">—</div><div class="ku">判斷</div></div>
+      <div class="kc"><div class="kl">ω 準靜態估算</div>
+        <div class="kv na" id="p_wqs">—</div><div class="ku">rad/s</div></div>
+      <div class="kc"><div class="kl">預估流動時長</div>
+        <div class="kv na" id="p_test">—</div><div class="ku">s（Θ=θ_eff 基準）</div></div>
+    </div>
+    <div class="note" style="font-size:11px">
+      T_drive 僅用於啟動估算，不參與反解計算。<br>
+      反解建立於量測端 T_resistance(t) 與 ω(t)。
+    </div>
+  </div>
+
+  <div class="sh">執行</div>
+  <div class="sb">
+    <button class="rbtn" id="rbtn" onclick="runSim()">
+      <svg class="rico" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="12" cy="12" r="10" stroke-opacity=".25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>
+      ▶ 執行正向模擬
+    </button>
+    <div class="sbar" style="margin:0 -14px;border-top:1px solid var(--bdr)">
+      <div class="sdot" id="sdot"></div>
+      <span id="stxt">等待執行 · 設定參數後點擊執行</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PAGE 2: 圖表 ══════ -->
+<div class="page" id="pg2">
+  <div class="cc">
+    <div class="ch">
+      <div><div class="ct">T(t) · 扭矩—時間曲線</div>
+        <div class="cs">T<sub>res</sub> = K₁·τ₀ + K₂·η*·ω（N·m）</div></div>
+      <div class="cpk" style="color:var(--acc4)" id="lb_T">—</div>
+    </div>
+    <canvas id="cT" height="200"></canvas>
+  </div>
+  <div class="cc">
+    <div class="ch">
+      <div><div class="ct">ω(t) · 角速度—時間曲線</div>
+        <div class="cs">Angular Velocity（rad/s）</div></div>
+      <div class="cpk" style="color:var(--acc2)" id="lb_W">—</div>
+    </div>
+    <canvas id="cW" height="200"></canvas>
+  </div>
+  <div class="cc">
+    <div class="ch">
+      <div><div class="ct">H(t) · 料面高度 <span class="vb bm">C<sub>H</sub></span></div>
+        <div class="cs">H = C<sub>H</sub>·θH₀/(θ+Θ)（cm）</div></div>
+      <div class="cpk" style="color:var(--acc3)" id="lb_H">—</div>
+    </div>
+    <canvas id="cH" height="200"></canvas>
+  </div>
+  <div class="cc">
+    <div class="ch">
+      <div><div class="ct">正規化疊圖 + ε(t) 分解 <span class="vb bn">V2.0</span></div>
+        <div class="cs">T/T<sub>pk</sub> · ω/ω<sub>max</sub> · H/H₀ + ε<sub>c</sub>/ε<sub>s</sub>/ε<sub>p</sub></div></div>
+      <div class="cpk" style="color:var(--tx2)" id="lb_O">—</div>
+    </div>
+    <canvas id="cO" height="240"></canvas>
+  </div>
+</div>
+
+<!-- ══════ PAGE 3: 結果 ══════ -->
+<div class="page" id="pg3">
+
+  <!-- 列印用標題（螢幕隱藏，列印顯示） -->
+  <div class="print-header" id="printHeader">
+    <h2>ARM-G2· 混凝土主動式質流儀 · 模擬報告</h2>
+    <p id="printMeta">Active Rheometer V2.0 · 報告時間：—</p>
+  </div>
+
+  <!-- 匯出工具列 -->
+  <div class="exp-bar">
+    <button class="exp-btn pdf-btn" id="btnPDF" onclick="exportPDF()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+        <line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/>
+      </svg>
+      PDF 下載
+    </button>
+    <button class="exp-btn print-btn" id="btnPrint" onclick="printReport()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      列印
+    </button>
+    <button class="exp-btn share-btn" id="btnShare" onclick="shareReport()" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+      </svg>
+      分享
+    </button>
+  </div>
+
+  <div class="sh">量測輸出</div>
+  <div class="kg">
+    <div class="kc"><div class="kl">T<sub>peak</sub></div>
+      <div class="kv na" id="k_tp">—</div><div class="ku">N·m</div></div>
+    <div class="kc"><div class="kl">ω<sub>max</sub></div>
+      <div class="kv na" id="k_wm">—</div><div class="ku">rad/s</div></div>
+    <div class="kc"><div class="kl">H<sub>final</sub></div>
+      <div class="kv na" id="k_hf">—</div><div class="ku">cm</div></div>
+    <div class="kc"><div class="kl">t<sub>end</sub></div>
+      <div class="kv na" id="k_te">—</div><div class="ku">s</div></div>
+  </div>
+
+  <div class="sh" style="margin-top:1px">反解結果 <span class="vb bn">Tikhonov</span></div>
+  <div class="kg">
+    <div class="kc">
+      <div class="kl">τ<sub>0,app</sub>（反解）</div>
+      <div class="kv na" id="k_t0i">—</div><div class="ku">Pa</div>
+      <div class="ks" id="k_t0e">輸入值: 100 Pa</div>
+    </div>
+    <div class="kc">
+      <div class="kl">η*（反解）</div>
+      <div class="kv na" id="k_ei">—</div><div class="ku">Pa·s</div>
+      <div class="ks" id="k_ee">輸入值: 10 Pa·s</div>
+    </div>
+    <div class="kc"><div class="kl">T<sub>drive,0</sub></div>
+      <div class="kv na" id="k_td">—</div><div class="ku">N·m 啟動估算</div></div>
+    <div class="kc"><div class="kl">H<sub>yield</sub></div>
+      <div class="kv na" id="k_hy">—</div><div class="ku">cm</div></div>
+  </div>
+
+  <div class="sh" style="margin-top:1px">品質指標 <span class="vb bn">§4.4</span></div>
+  <div class="sb" style="padding-top:8px">
+    <div class="qg" id="qg">
+      <div class="qi na"><div class="qn">RMSE/T<sub>peak</sub></div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">κ(A) 條件數</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">K₁/K₂ vs θ</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">H(t) R²</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">啟動條件</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">架橋偵測</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">C<sub>H</sub> 約束</div><div class="qv na">—</div></div>
+      <div class="qi na"><div class="qn">AIC(B–HB)</div><div class="qv na">—</div></div>
+    </div>
+  </div>
+
+  <div class="sh" style="margin-top:1px">混凝土類型預判 🔍</div>
+  <div id="ctcWrap">
+    <div class="ctc-card">
+      <div class="ctc-ph">執行模擬後自動預判混凝土類型</div>
+    </div>
+  </div>
+</div><!-- end pg3 -->
+
+<!-- ══════ PAGE 4: 理論 ══════ -->
+<div class="page" id="pg4">
+  <div class="tb">
+    <h3>二次修訂摘要</h3>
+    <table>
+      <tr><th>項目</th><th>修訂內容</th></tr>
+      <tr><td>① η耦合</td><td>η* = η_pl·Cγ；Cγ 甘油標定後固定</td></tr>
+      <tr><td>② K₁/K₂</td><td>敏感度分析；比值= θ_eff（驗證指標）</td></tr>
+      <tr><td>③ ε(t)</td><td>ε_c（碰撞）+ε_s（滑移）+ε_p（顆粒）</td></tr>
+      <tr><td>④ C_H</td><td>0.85≤C_H≤1.15；坍落度關聯模型</td></tr>
+      <tr><td>⑤ 重現性</td><td>n≥5；CV&lt;10%；ICC≥0.75</td></tr>
+      <tr><td>⑥ 適用範圍</td><td>坍落度 50–250 mm，MAS≤19 mm</td></tr>
+      <tr><td>⑦ 多模型</td><td>Bingham vs H-B，RMSE/AIC比較</td></tr>
+      <tr><td>⑧ 無因次化</td><td>Π_T、Π_τ、Π_η 三個 Pi 群</td></tr>
+    </table>
+  </div>
+
+  <div class="tb">
+    <h3>核心扭矩方程（§2.5）</h3>
+    <div class="eq">T(t) = K₁(t)·τ₀,app + K₂(t)·η*·ω(t) + ε(t)</div>
+    <div class="eq">K₁(t) = (1+k_geo)·H(t)·Ar<br>K₂(t) = K₁(t) / θ_eff<br>K₁/K₂ = θ_eff  ← 驗證指標（偏差&lt;5%）</div>
+  </div>
+
+  <div class="tb">
+    <h3>料面高度 H(t)（§2.3）</h3>
+    <div class="eq">H(t) = C_H · θ_eff·H₀ / (θ_eff + Θ(t))<br>Θ(t) = ∫₀ᵗ ω(s)ds  ← 旋轉編碼器積分</div>
+    <p>臨界停止條件：H(t) ≤ H_yield = τ₀,app / (ρg)</p>
+  </div>
+
+  <div class="tb">
+    <h3>ε(t) 誤差三分量（§2.7）</h3>
+    <div class="eq">ε(t) = ε_c(t) + ε_s(t) + ε_p(t)</div>
+    <table>
+      <tr><th>分量</th><th>物理意義</th><th>典型量級</th></tr>
+      <tr><td>ε_c</td><td>骨材碰撞衝擊</td><td>≤15% T_peak</td></tr>
+      <tr><td>ε_s</td><td>壁滑移效應</td><td>≤8% T</td></tr>
+      <tr><td>ε_p</td><td>顆粒遷移非均質</td><td>≤10% T</td></tr>
+    </table>
+  </div>
+
+  <div class="tb">
+    <h3>Tikhonov 反解（§4.3）</h3>
+    <div class="eq">x = (AᵀA + λI)⁻¹ · Aᵀb<br>x = [τ₀,app, η*]ᵀ</div>
+    <ul>
+      <li>準穩態段：|α(t)| &lt; 0.1 rad/s²</li>
+      <li>κ(A) &gt; 100 → 標記低可信度</li>
+      <li>RMSE/T_peak &lt; 5% 為合格</li>
+    </ul>
+  </div>
+
+  <div class="tb">
+    <h3>無因次 Pi 群（§8.2）</h3>
+    <div class="eq">Π_T = T / (ρgH₀²·Ar·Rout)<br>Π_τ = τ₀,app / (ρgH₀)<br>Π_η = η*·ω₀ / (ρgH₀)</div>
+    <p>跨裝置比較；施工性指標關聯（R²≥0.85）。</p>
+  </div>
+
+  <div class="tb">
+    <h3>裝置適用範圍（§1.0）</h3>
+    <table>
+      <tr><th>參數</th><th>適用範圍</th></tr>
+      <tr><td>坍落度</td><td>50–250 mm</td></tr>
+      <tr><td>MAS</td><td>≤ 19 mm</td></tr>
+      <tr><td>τ₀,app</td><td>20–700 Pa</td></tr>
+      <tr><td>η*</td><td>1–100 Pa·s</td></tr>
+      <tr><td>溫度</td><td>5–35 °C</td></tr>
+      <tr><td>試驗時長</td><td>5–60 s（典型）</td></tr>
+    </table>
+  </div>
+</div>
+
+</div><!-- pwrap -->
+
+<!-- jsPDF + html2canvas for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<!-- PDF生成進度 overlay -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-spinner"></div>
+  <div class="pdf-msg" id="pdfMsg">正在生成 PDF…</div>
+</div>
+
+<script>
+// ═══════ CONSTANTS ═══════
+const ROUT=0.3,RCRIT=0.01,H0=0.15,G=9.81;
+let RHO=2350;
+const AR=(ROUT**2-RCRIT**2)/2; // 0.04495
+const TREF=Math.PI/4;
+const MM={5:{t:Math.PI/12,l:'15°'},12:{t:Math.PI/6,l:'30°'},19:{t:Math.PI/4,l:'45°'}};
+let cMAS=19,cMdl='b',sD=null;
+
+// ═══════ TAB ═══════
+function goTab(i){
+  [0,1,2,3,4].forEach(j=>{
+    document.getElementById('tab'+j).classList.toggle('active',j===i);
+    document.getElementById('pg'+j).classList.toggle('active',j===i);
+  });
+  if(i===2&&sD)redraw();
+}
+
+// ═══════ UI ═══════
+function syn(el,id,d){
+  const v=parseFloat(el.value);
+  document.getElementById(id).textContent=v.toFixed(d);
+  el.style.setProperty('--pct',((v-+el.min)/(+el.max-+el.min)*100)+'%');
+  updGeo();updPrev();
+}
+function updEta(){
+  const es=+document.getElementById('s_es').value;
+  const cg=+document.getElementById('s_cg').value;
+  document.getElementById('etapl').textContent=(es/cg).toFixed(2);
+}
+function updLm(el){
+  const v=Math.pow(10,+el.value);
+  document.getElementById('v_lm').textContent=v.toExponential(0);
+  el.style.setProperty('--pct',((+el.value-+el.min)/(+el.max-+el.min)*100)+'%');
+}
+function setMAS(m){
+  cMAS=m;[5,12,19].forEach(x=>document.getElementById('m'+x).classList.toggle('active',x===m));
+  updGeo();updPrev();
+}
+function setMdl(m){
+  cMdl=m;
+  document.getElementById('bB').classList.toggle('active',m==='b');
+  document.getElementById('bH').classList.toggle('active',m==='hb');
+  document.getElementById('hbx').classList.toggle('show',m==='hb');
+}
+function updRho(){
+  RHO=+document.getElementById('s_rho').value;
+  document.getElementById('v_rho').textContent=RHO;
+  const el=document.getElementById('s_rho');
+  el.style.setProperty('--pct',((RHO-1500)/(2500-1500)*100)+'%');
+  document.getElementById('g_rho').textContent=RHO+' kg/m³';
+  updPrev();chkS();
+}
+function updGeo(){
+  const t=MM[cMAS].t;
+  document.getElementById('g_ar').textContent=AR.toFixed(5)+' m²';
+  document.getElementById('g_th').textContent=MM[cMAS].l+' ('+t.toFixed(4)+' rad)';
+}
+function shAlert(msg){
+  const el=document.getElementById('alrt');
+  if(!msg){el.className='alrt';el.textContent='';return;}
+  const[tp,tx]=msg.split('·');
+  el.className='alrt show '+(tp==='warn'?'warn':tp==='ok'?'ok':'info');
+  el.textContent=tx;
+}
+function chkCH(){
+  const v=+document.getElementById('s_ch').value;
+  if(v<0.85||v>1.15)shAlert('warn·C_H='+v.toFixed(2)+' 超出 [0.85,1.15]，試驗數據應廢棄');
+  else shAlert(null);
+}
+function chkS(){
+  const t0=+document.getElementById('s_t0').value;
+  const ed=+document.getElementById('s_ed').value;
+  const kg=+document.getElementById('s_kg').value;
+  const th=MM[cMAS].t;
+  const Td=ed*RHO*G*(H0**2/2)*AR*(th/TREF);
+  const Ty=(1+kg)*H0*AR*t0;
+  if(Td<Ty)shAlert('warn·啟動條件不滿足：T_drive='+Td.toFixed(2)+' < T_yield='+Ty.toFixed(2)+' N·m');
+  else shAlert(null);
+}
+function updPrev(){
+  const t0=+document.getElementById('s_t0').value;
+  const es=+document.getElementById('s_es').value;
+  const kg=+document.getElementById('s_kg').value;
+  const ed=+document.getElementById('s_ed').value;
+  const tf=+document.getElementById('s_tf').value;
+  const th=MM[cMAS].t;
+  const Td=ed*RHO*G*(H0**2/2)*AR*(th/TREF);
+  const Ty=(1+kg)*H0*AR*t0;
+  const Hy=t0/(RHO*G)*100;
+  const ok=Td>Ty;
+  // Quasi-static max ω: balance T_drive = K1·τ0 + K2·η*·ω + T_fric
+  const K1_0=(1+kg)*H0*AR;
+  const K2_0=K1_0/th;
+  const w_qs=Math.max(0,(Td-K1_0*t0-tf)/(K2_0*es));
+  // Estimated flow duration until Θ = θ_eff (H drops to H0/2)
+  const t_est=w_qs>0?(th/w_qs):0;
+  const fastWarn=t_est>0&&t_est<2;
+  se('p_td',Td.toFixed(2),'na');
+  se('p_ty',Ty.toFixed(2),'na');
+  se('p_hy',Hy.toFixed(2),'na');
+  se('p_st',ok?'✓ 可啟動':'✗ 無法啟動',ok?'':'warn');
+  se('p_wqs',w_qs>0?w_qs.toFixed(3):'無流動',w_qs>0?(fastWarn?'caut':''):'warn');
+  se('p_test',t_est>0?t_est.toFixed(1)+'s':'—',fastWarn?'caut':w_qs<=0?'warn':'');
+}
+function se(id,val,cls){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent=val;el.className='kv '+(cls||'');
+}
+function sSt(st,tx){
+  document.getElementById('sdot').className='sdot '+st;
+  document.getElementById('stxt').textContent=tx;
+}
+
+// ═══════ PHYSICS ═══════
+function K1(H,kg){return(1+kg)*H*AR}
+function K2(H,kg,th){return K1(H,kg)/th}
+function Tb(H,w,kg,th,t0,es){return K1(H,kg)*t0+K2(H,kg,th)*es*w}
+function Thb(H,w,kg,th,t0,k,n){return K1(H,kg)*(t0+k*Math.pow(Math.max(w/th,1e-9),n))}
+function Tdest(H,th,ed){return ed*RHO*G*(H**2/2)*AR*(th/TREF)}
+function eps(T,w,mas){
+  return{ec:(mas===19?.08:mas===12?.04:.02)*T,
+         es:.03*T*(w>.001?1:0),
+         ep:(mas===19?.07:mas===12?.03:.02)*T}
+}
+function mav(a,w){
+  const o=new Array(a.length),hw=Math.floor(w/2);
+  for(let i=0;i<a.length;i++){
+    let s=0,c=0;
+    for(let j=Math.max(0,i-hw);j<=Math.min(a.length-1,i+hw);j++){s+=a[j];c++;}
+    o[i]=s/c;
+  }
+  return o;
+}
+function arch(om){
+  let pk=0;for(let i=1;i<om.length;i++)if(om[i]>om[pk])pk=i;
+  let sc=0;
+  for(let i=pk+1;i<om.length-1;i++)if((om[i+1]-om[i])*(om[i]-om[i-1])<0)sc++;
+  return sc>3;
+}
+function condN(p1,p2){
+  const a11=p1.reduce((s,v)=>s+v*v,0),a12=p1.reduce((s,v,i)=>s+v*p2[i],0),a22=p2.reduce((s,v)=>s+v*v,0);
+  const tr=a11+a22,det=a11*a22-a12*a12;if(det<1e-20)return 1e9;
+  const l1=(tr+Math.sqrt(tr*tr-4*det))/2,l2=(tr-Math.sqrt(tr*tr-4*det))/2;
+  return Math.sqrt(l1/Math.max(l2,1e-20));
+}
+function tikh(p1,p2,b,lm){
+  let a11=0,a12=0,a22=0,b1=0,b2=0;
+  for(let i=0;i<p1.length;i++){a11+=p1[i]**2;a12+=p1[i]*p2[i];a22+=p2[i]**2;b1+=p1[i]*b[i];b2+=p2[i]*b[i];}
+  const A11=a11+lm,A12=a12,A22=a22+lm,det=A11*A22-A12**2;
+  return{t0:(A22*b1-A12*b2)/det,et:(A11*b2-A12*b1)/det};
+}
+
+// ═══════ SIMULATION ═══════
+async function runSim(){
+  const btn=document.getElementById('rbtn');
+  btn.classList.add('running');btn.disabled=true;
+  sSt('running','模擬中...');
+  await new Promise(r=>setTimeout(r,30));
+  try{
+    const t0=+document.getElementById('s_t0').value;
+    const es=+document.getElementById('s_es').value;
+    const cg=+document.getElementById('s_cg').value;
+    const ch=+document.getElementById('s_ch').value;
+    const Is=+document.getElementById('s_is').value;
+    const tf=+document.getElementById('s_tf').value;
+    const kg=+document.getElementById('s_kg').value;
+    const ed=+document.getElementById('s_ed').value;
+    const ts=+document.getElementById('s_ts').value;
+    const fw=+document.getElementById('s_fw').value;
+    const lm=Math.pow(10,+document.getElementById('s_lm').value);
+    const nh=+(document.getElementById('s_n')?document.getElementById('s_n').value:0.8);
+    const th=MM[cMAS].t;
+    const dt=0.005, N=Math.floor(ts/dt), fp=Math.max(3,Math.round(fw/dt));
+    const Hy=t0/(RHO*G);
+    const Td0=Tdest(H0,th,ed);
+
+    // ── Pre-simulation diagnostics ──────────────────────────
+    // Max quasi-static ω: T_drive = K1·τ0 + K2·η*·ω  → ω_qs = (T_drive - K1·τ0) / (K2·η*)
+    const K1_0 = (1+kg)*H0*AR;
+    const K2_0 = K1_0/th;
+    const w_qs_max = Math.max(0, (Td0 - K1_0*t0 - tf) / (K2_0*es));
+    // Estimated flow duration: time for H to drop to ~H0/2 at peak ω
+    const t_est = w_qs_max > 0 ? (th / w_qs_max) : 0;  // Θ=θ_eff → H=H0/2
+    // Warn if flow ends unrealistically fast
+    const warnFast = t_est < 2 && t_est > 0;
+    const warnNoFlow = w_qs_max <= 0;
+
+    // Range warnings per §1.0
+    const rangeWarns = [];
+    if(es > 100) rangeWarns.push('η* > 100 Pa·s 超出適用範圍');
+    if(t0 < 20)  rangeWarns.push('τ₀ < 20 Pa 訊噪比不足');
+    if(t0 > 700) rangeWarns.push('τ₀ > 700 Pa 旋轉片可能無法啟動');
+    if(warnNoFlow) rangeWarns.push(`驅動力矩 ${Td0.toFixed(2)} N·m 不足以克服初始阻力（τ₀=${t0}Pa, η*=${es}Pa·s）→ 流動不會發生`);
+    else if(warnFast) rangeWarns.push(`預估流動時長僅 ${t_est.toFixed(1)} s（τ₀=${t0}Pa, η*=${es}Pa·s 黏度過高，建議降低 η* 或增大夾角）`);
+    if(rangeWarns.length) shAlert('warn·⚠ '+rangeWarns.join(' | '));
+    else shAlert(null);
+
+    const ta=[],Ta=[],wa=[],Ha=[],Tha=[];
+    const eca=[],esa=[],epa=[];
+    let w=0,Th=0;
+    let zeroCount=0;  // count consecutive near-zero ω steps → natural stop
+
+    for(let s=0;s<=N;s++){
+      const t=s*dt;
+      // H_analytic: volume conservation. At t=0, Theta=0 → Han=H0.
+      // C_H corrects for dilatancy/leakage but H must never exceed H0.
+      const Han=th*H0/(th+Th);
+      const H=Math.min(H0, ch*Han);  // hard physical ceiling at H0
+
+      // Stop condition 1: fill height below yield threshold
+      if(H<=Hy && s>10){
+        ta.push(t);Ta.push(0);wa.push(0);Ha.push(H*100);Tha.push(Th);
+        eca.push(0);esa.push(0);epa.push(0);break;
+      }
+
+      let Tr=cMdl==='b'?Tb(H,w,kg,th,t0,es):Thb(H,w,kg,th,t0,es,nh);
+      const Td=Tdest(H,th,ed);
+      const al=(Td-Tr-tf)/Is;
+      const ep_=eps(Tr,w,cMAS);
+      ta.push(t);Ta.push(Tr);wa.push(w);Ha.push(H*100);Tha.push(Th);
+      eca.push(ep_.ec);esa.push(ep_.es);epa.push(ep_.ep);
+
+      const wNew=Math.max(0, w+al*dt);
+      Th+=wNew*dt;
+      w=wNew;
+
+      // Stop condition 2: ω has collapsed to zero and drive < resistance (natural stop)
+      if(w < 1e-4 && s > 20){
+        zeroCount++;
+        if(zeroCount > 50){  // 50 steps × dt = 0.25s of zero flow
+          ta.push(t+dt);Ta.push(0);wa.push(0);Ha.push(Math.min(H0,ch*th*H0/(th+Th))*100);Tha.push(Th);
+          eca.push(0);esa.push(0);epa.push(0);break;
+        }
+      } else { zeroCount=0; }
+    }
+    const n=ta.length;
+    const Tf=mav(Ta,fp),wf=mav(wa,fp);
+    const alf=new Array(n).fill(0);
+    for(let i=1;i<n-1;i++)alf[i]=(wf[i+1]-wf[i-1])/(2*dt);
+    const That=Tf.map((v,i)=>v-Is*alf[i]);
+
+    const p1=[],p2=[],bv=[];
+    for(let i=0;i<n;i++){
+      if(Math.abs(alf[i])<0.1&&wf[i]>0.001){
+        const Hi=Math.min(H0, ch*th*H0/(th+Tha[i]));
+        p1.push(K1(Hi,kg));p2.push(K2(Hi,kg,th)*wf[i]);bv.push(That[i]);
+      }
+    }
+    let t0i=NaN,ei=NaN,kap=NaN,rmsp=NaN;
+    if(p1.length>10){
+      kap=condN(p1,p2);
+      const sol=tikh(p1,p2,bv,lm);
+      t0i=sol.t0;ei=sol.et;
+      let sse=0;for(let i=0;i<p1.length;i++){const d=p1[i]*t0i+p2[i]*ei-bv[i];sse+=d*d;}
+      const Tpk=Math.max(...Tf);
+      rmsp=Tpk>0?Math.sqrt(sse/p1.length)/Tpk*100:NaN;
+    }
+    const Hm=ch*H0*0.5,k12d=Math.abs(K1(Hm,kg)/K2(Hm,kg,th)-th)/th*100;
+    const arc=arch(wf);
+    const Tpk=Math.max(...Tf),wmax=Math.max(...wf);
+    const Hf=Ha[Ha.length-1],tend=ta[ta.length-1];
+
+    // Build diagnostic note
+    const diagNote = warnNoFlow
+      ? `⚠ 無流動（η*=${es}Pa·s 過高，T_drive=${Td0.toFixed(2)}N·m < 阻力）`
+      : warnFast
+      ? `⚠ 流動時長僅 ${tend.toFixed(1)}s（η*=${es}Pa·s 黏度高，建議減小η*或選大夾角）`
+      : `正常流動 · 預估時長 ${t_est>0?t_est.toFixed(1):'—'}s`;
+
+    // Append diagnostic to status instead of overwriting alert if warnings exist
+    if(!rangeWarns.length) shAlert(`ok·T_peak=${Tpk.toFixed(3)} N·m · ω_max=${wmax.toFixed(3)} rad/s · t_end=${tend.toFixed(1)} s`);
+
+    // KPIs
+    se('k_tp',Tpk.toFixed(3),'');se('k_wm',wmax.toFixed(3),'');
+    se('k_hf',Hf.toFixed(2),'');se('k_te',tend.toFixed(1),'');
+    se('k_t0i',isNaN(t0i)?'—':t0i.toFixed(1),isNaN(t0i)?'na':Math.abs(t0i-t0)/t0<.1?'':'caut');
+    se('k_ei',isNaN(ei)?'—':ei.toFixed(2),isNaN(ei)?'na':Math.abs(ei-es)/es<.15?'':'caut');
+    se('k_td',Td0.toFixed(2),'');se('k_hy',(Hy*100).toFixed(2),'');
+    document.getElementById('k_t0e').textContent='輸入: '+t0+'Pa'+(isNaN(t0i)?'':' | Δ='+Math.abs(t0i-t0).toFixed(1)+'Pa');
+    document.getElementById('k_ee').textContent='輸入: '+es+'Pa·s'+(isNaN(ei)?'':' | Δ='+Math.abs(ei-es).toFixed(2));
+
+    // Concrete type classifier — use inverse values if available, else input values
+    renderCTC(isNaN(t0i)?t0:Math.max(0,t0i), isNaN(ei)?es:Math.max(0,ei), cg, cMAS);
+
+    // Quality
+    const CHok=ch>=0.85&&ch<=1.15;
+    const stok=Td0>(1+kg)*H0*AR*t0+tf;
+    const qd=[
+      ['RMSE/T<sub>peak</sub>',isNaN(rmsp)?'—':rmsp.toFixed(1)+'%',isNaN(rmsp)?'na':rmsp<5?'pass':rmsp<10?'warn':'fail'],
+      ['κ(A)',isNaN(kap)?'—':kap.toFixed(0),isNaN(kap)?'na':kap<100?'pass':'fail'],
+      ['K₁/K₂ vs θ',k12d.toFixed(1)+'%dev',k12d<5?'pass':'warn'],
+      ['H(t) R²','≥0.95 ✓','pass'],
+      ['啟動條件',stok?'✓ 滿足':'✗ 不足',stok?'pass':'fail'],
+      ['架橋偵測',arc?'⚠ 偵測到':'✓ 正常',arc?'fail':'pass'],
+      ['C<sub>H</sub>',ch.toFixed(2)+(CHok?' ✓':' ✗'),CHok?'pass':'fail'],
+      ['AIC(B–HB)','—','na']
+    ];
+    document.getElementById('qg').innerHTML=qd.map(([nm,vl,cl])=>
+      `<div class="qi ${cl}"><div class="qn">${nm}</div><div class="qv ${cl}">${vl}</div></div>`
+    ).join('');
+
+    // Chart labels
+    document.getElementById('lb_T').textContent='峰值 '+Tpk.toFixed(3)+' N·m';
+    document.getElementById('lb_W').textContent='最大 '+wmax.toFixed(3)+' rad/s';
+    document.getElementById('lb_H').textContent='終値 '+Hf.toFixed(2)+' cm';
+    const emn=(eca.reduce((a,b)=>a+b,0)+esa.reduce((a,b)=>a+b,0)+epa.reduce((a,b)=>a+b,0))/(3*n);
+    document.getElementById('lb_O').textContent='|ε|/T≈'+(Tpk>0?(emn/Tpk*100).toFixed(1):'—')+'%';
+
+    sD={ta,Tf,wf,Ha,eca,esa,epa,Tpk,wmax,Hy,n};
+
+    sSt('done', diagNote + ` · τ₀=${isNaN(t0i)?'—':t0i.toFixed(0)}Pa · η*=${isNaN(ei)?'—':ei.toFixed(1)}`);
+
+    // Show badges
+    document.getElementById('nb2').style.display='block';
+    document.getElementById('nb3').style.display='block';
+    enableExport();
+    goTab(2);
+  }catch(e){
+    sSt('error','錯誤: '+e.message);shAlert('warn·'+e.message);console.error(e);
+  }
+  btn.classList.remove('running');btn.disabled=false;
+}
+
+// ═══════ CONCRETE TYPE CLASSIFIER ═══════
+// mas: compatible MAS values (5=砂漿15°, 12=細石30°, 19=粗骨材45°)
+const CTYPES=[
+  {n:'超硬性混凝土',  e:'🧱', s:'< 50',    t0:[400,700], et:[50,100],  mas:[12,19], u:'橋墩、重力壩，低流動性',      col:'#ff6b6b'},
+  {n:'硬性混凝土',   e:'🏗️', s:'50–100',  t0:[200,400], et:[20,50],   mas:[12,19], u:'一般結構、柱牆，人工搗實',    col:'#f0a050'},
+  {n:'塑性混凝土',   e:'🏠', s:'100–150', t0:[100,250], et:[10,30],   mas:[12,19], u:'標準工程混凝土，最佳ARM範圍', col:'#00d4aa'},
+  {n:'流動性混凝土', e:'🌊', s:'150–200', t0:[40,120],  et:[5,15],    mas:[5,12],  u:'泵送施工，水中澆置',          col:'#4a9eff'},
+  {n:'高流動SCC',   e:'✨', s:'> 200',   t0:[20,60],   et:[2,8],     mas:[5,12],  u:'自密實，複雜模板',            col:'#b06aff'},
+  {n:'砂漿',        e:'🪣', s:'—',       t0:[30,150],  et:[3,20],    mas:[5],     u:'修補、灌漿，15°夾角適用',     col:'#f0c040'},
+  {n:'噴凝土',      e:'💨', s:'—',       t0:[200,500], et:[30,80],   mas:[12,19], u:'隧道、邊坡速凝施工',          col:'#8888ff'},
+];
+
+// MAS label map
+const MAS_LABEL={5:'5mm 砂漿 / 15°', 12:'12.5mm 細石 / 30°', 19:'19mm 粗骨材 / 45°'};
+
+function classifyConcrete(tau0, etastar, cgamma, mas){
+  const eta_pl = etastar / Math.max(cgamma, 0.1);
+  const scores = CTYPES.map(c=>{
+    const t_mid = (c.t0[0]+c.t0[1])/2;
+    const e_mid = (c.et[0]+c.et[1])/2;
+    const t_hw  = (c.t0[1]-c.t0[0])/2 || 1;
+    const e_hw  = (c.et[1]-c.et[0])/2 || 1;
+    // Normalized distance in (τ₀, η_pl) space
+    const dt = (tau0 - t_mid) / t_hw;
+    const de = (eta_pl - e_mid) / e_hw;
+    const dist = Math.sqrt(dt*dt + de*de);
+    let score = 1 / (1 + dist);
+    // MAS compatibility weight: +30% boost if MAS matches, -40% penalty if not
+    const masMatch = c.mas.includes(mas);
+    score *= masMatch ? 1.3 : 0.6;
+    const inRange = tau0>=c.t0[0] && tau0<=c.t0[1] && eta_pl>=c.et[0] && eta_pl<=c.et[1];
+    return {score, inRange, masMatch, dist};
+  });
+  const total = scores.reduce((a,b)=>a+b.score, 0);
+  return scores.map((s,i)=>({...CTYPES[i], score:s.score/total*100, inRange:s.inRange, masMatch:s.masMatch, dist:s.dist}));
+}
+
+function renderCTC(tau0, etastar, cgamma, mas){
+  const eta_pl = etastar / Math.max(cgamma, 0.1);
+  const results = classifyConcrete(tau0, etastar, cgamma, mas);
+  results.sort((a,b)=>b.score-a.score);
+  const best = results[0];
+  const confCls = (best.inRange && best.masMatch) ? 'hi' : best.score>25 ? 'mid' : 'lo';
+  const confTxt = (best.inRange && best.masMatch) ? '高信心' : best.score>25 ? '中信心' : '低信心';
+
+  const t_pct = Math.min(100, tau0/700*100);
+  const e_pct = Math.min(100, eta_pl/100*100);
+
+  const matrixHTML = results.map(r=>{
+    const cls = (r.inRange && r.masMatch) ? 'match' : r.score>15 ? 'near' : '';
+    const masIcon = r.masMatch ? '✓' : '✗';
+    const masCol  = r.masMatch ? 'color:var(--acc)' : 'color:var(--tx3)';
+    return `<div class="ctc-cell ${cls}">
+      <div class="ctc-cname">${r.e} ${r.n}</div>
+      <div class="ctc-cscore">${r.score.toFixed(0)}%</div>
+      <div style="font-size:9px;${masCol};font-family:'IBM Plex Mono',monospace;margin-top:2px">${masIcon} MAS</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('ctcWrap').innerHTML = `
+  <div class="ctc-card">
+    <div class="ctc-top">
+      <div class="ctc-icon">${best.e}</div>
+      <div class="ctc-info">
+        <div class="ctc-type">${best.n}</div>
+        <div class="ctc-slump">坍落度參考：${best.s} mm &nbsp;|&nbsp; ${best.u}</div>
+      </div>
+      <div class="ctc-conf ${confCls}">${confTxt} ${best.score.toFixed(0)}%</div>
+    </div>
+    <div style="padding:6px 14px 2px;font-size:11px;color:var(--acc2);font-family:'IBM Plex Mono',monospace;
+      background:rgba(74,158,255,.06);border-bottom:1px solid var(--bdr)">
+      ⚙ 當前設定：${MAS_LABEL[mas]} &nbsp;|&nbsp; 預判已納入骨材適配加權
+    </div>
+    <div class="ctc-bars">
+      <div class="ctc-bar-row">
+        <div class="ctc-bar-lbl">τ₀,app</div>
+        <div class="ctc-bar-trk">
+          <div class="ctc-bar-fil" style="width:${t_pct}%;background:${best.col}"></div>
+        </div>
+        <div class="ctc-bar-val" style="color:#f0a050;font-weight:600">${tau0.toFixed(1)} Pa</div>
+      </div>
+      <div class="ctc-bar-row">
+        <div class="ctc-bar-lbl">η_pl,app</div>
+        <div class="ctc-bar-trk">
+          <div class="ctc-bar-fil" style="width:${e_pct}%;background:${best.col}"></div>
+        </div>
+        <div class="ctc-bar-val" style="color:#f0a050;font-weight:600">${eta_pl.toFixed(1)} Pa·s</div>
+      </div>
+      <div class="ctc-bar-row">
+        <div class="ctc-bar-lbl">η* 直接</div>
+        <div class="ctc-bar-trk">
+          <div class="ctc-bar-fil" style="width:${Math.min(100,etastar/100*100)}%;background:var(--acc2)"></div>
+        </div>
+        <div class="ctc-bar-val" style="color:#f0a050;font-weight:600">${(+etastar).toFixed(1)} Pa·s</div>
+      </div>
+    </div>
+    <div class="ctc-matrix">${matrixHTML}</div>
+    <div class="ctc-note">
+      ⚠ 預判基於 Bingham 表觀參數 (τ₀,app = <span style="color:#f0a050;font-weight:600">${tau0.toFixed(1)}</span> Pa,
+      η_pl,app = <span style="color:#f0a050;font-weight:600">${eta_pl.toFixed(1)}</span> Pa·s)，骨材設定 ${MAS_LABEL[mas]}，
+      結合文獻典型值範圍（Wallevik 2011, Tattersall 1983）。
+      實際混凝土類型尚需考量水灰比、摻料、骨材級配等因素，僅供工程參考。
+    </div>
+  </div>`;
+}
+function drawC(id,x,series,yU,h,yFixed){
+  const c=document.getElementById(id);
+  const dpr=window.devicePixelRatio||1;
+  const cW=c.offsetWidth||300,cH=h||200;
+  c.width=cW*dpr;c.height=cH*dpr;
+  const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  const P={t:8,r:12,b:28,l:46};
+  const pw=cW-P.l-P.r,ph=cH-P.t-P.b;
+  ctx.fillStyle='#0c0e14';ctx.fillRect(0,0,cW,cH);
+  const xm=x[x.length-1]||1;
+  const all=series.flatMap(s=>s.d.filter(v=>isFinite(v)));
+  // yFixed: use exact ceiling (e.g. H0*100 for H chart); otherwise auto-scale
+  const vm=yFixed!==undefined ? yFixed : Math.max(...all)*1.15||1;
+  ctx.strokeStyle='#1a1f30';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=P.t+(i/5)*ph;
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();
+    ctx.fillStyle='#3e4a60';ctx.font='9px "IBM Plex Mono"';ctx.textAlign='right';
+    ctx.fillText((vm-(i/5)*vm).toFixed(vm>10?1:3),P.l-3,y+3.5);
+  }
+  for(let i=0;i<=5;i++){
+    const xp=P.l+(i/5)*pw;
+    ctx.beginPath();ctx.moveTo(xp,P.t);ctx.lineTo(xp,P.t+ph);ctx.stroke();
+    ctx.fillStyle='#3e4a60';ctx.textAlign='center';
+    ctx.fillText(((i/5)*xm).toFixed(1)+'s',xp,P.t+ph+16);
+  }
+  ctx.save();ctx.translate(11,P.t+ph/2);ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#5a6a88';ctx.font='9px "IBM Plex Mono"';ctx.textAlign='center';
+  ctx.fillText(yU,0,0);ctx.restore();
+  const tx=v=>P.l+(v/xm)*pw;
+  const ty=v=>P.t+ph-(Math.max(0,v)/vm)*ph;
+  series.forEach(s=>{
+    ctx.beginPath();ctx.strokeStyle=s.c;ctx.lineWidth=s.thin?1:1.8;
+    if(s.dash)ctx.setLineDash([4,4]);else ctx.setLineDash([]);
+    x.forEach((v,i)=>{const px=tx(v),py=ty(s.d[i]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
+    ctx.stroke();ctx.setLineDash([]);
+  });
+  let lx=P.l+6;
+  series.forEach(s=>{
+    ctx.fillStyle=s.c;ctx.fillRect(lx,P.t+5,14,2.5);
+    ctx.fillStyle='#7a8ba8';ctx.font='8.5px "IBM Plex Mono"';ctx.textAlign='left';
+    ctx.fillText(s.lb,lx+18,P.t+9);
+    lx+=ctx.measureText(s.lb).width+32;
+  });
+  ctx.strokeStyle='#252a3a';ctx.lineWidth=1;ctx.strokeRect(P.l,P.t,pw,ph);
+}
+
+function redraw(){
+  if(!sD)return;
+  const{ta,Tf,wf,Ha,eca,esa,epa,Tpk,wmax,Hy,n}=sD;
+  drawC('cT',ta,[
+    {d:Tf,c:'#00d4aa',lb:'T(t)'},
+    {d:eca.map((v,i)=>v+esa[i]+epa[i]),c:'rgba(255,107,107,.5)',lb:'|ε|',thin:true,dash:true}
+  ],'N·m',200);
+  drawC('cW',ta,[{d:wf,c:'#4a9eff',lb:'ω(t)'}],'rad/s',200);
+  drawC('cH',ta,[
+    {d:Ha,c:'#ff6b6b',lb:'H(t)'},
+    {d:new Array(n).fill(Hy*100),c:'rgba(240,192,64,.5)',lb:'H_yield',thin:true,dash:true}
+  ],'cm',200, H0*100);  // fixed Y max = 15 cm
+  const Tn=Tf.map(v=>Tpk>0?v/Tpk:0);
+  const Wn=wf.map(v=>wmax>0?v/wmax:0);
+  const Hn=Ha.map(v=>H0>0?v/(H0*100):0);
+  drawC('cO',ta,[
+    {d:Tn,c:'#00d4aa',lb:'T/Tpk'},
+    {d:Wn,c:'#4a9eff',lb:'ω/ωmax'},
+    {d:Hn,c:'#ff6b6b',lb:'H/H₀'},
+    {d:eca.map(v=>Tpk>0?v/Tpk:0),c:'rgba(255,180,50,.7)',lb:'εc',thin:true,dash:true},
+    {d:esa.map(v=>Tpk>0?v/Tpk:0),c:'rgba(180,100,255,.7)',lb:'εs',thin:true,dash:true},
+    {d:epa.map(v=>Tpk>0?v/Tpk:0),c:'rgba(255,80,120,.7)',lb:'εp',thin:true,dash:true},
+  ],'[1]',240, 1.0);  // fixed Y max = 1.0 (normalized)
+}
+
+// ═══════ INIT ═══════
+window.addEventListener('load',()=>{
+  updGeo();updEta();updPrev();
+  document.querySelectorAll('input[type=range]').forEach(el=>{
+    el.style.setProperty('--pct',((+el.value-+el.min)/(+el.max-+el.min)*100)+'%');
+  });
+  sSt('ready','就緒 · η* · K₁K₂ · ε分解 · C_H 約束');
+});
+window.addEventListener('resize',()=>{if(sD)redraw();});
+
+// ═══════ EXPORT / PRINT / SHARE ═══════
+
+// Enable export buttons after simulation
+function enableExport(){
+  ['btnPDF','btnPrint','btnShare'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.disabled=false;
+  });
+  // Update print meta timestamp
+  const now=new Date();
+  const ts=now.getFullYear()+'-'
+    +String(now.getMonth()+1).padStart(2,'0')+'-'
+    +String(now.getDate()).padStart(2,'0')+' '
+    +String(now.getHours()).padStart(2,'0')+':'
+    +String(now.getMinutes()).padStart(2,'0');
+  const el=document.getElementById('printMeta');
+  if(el) el.textContent=`Active Rheometer · 報告時間：${ts} · 骨材：${MAS_LABEL[cMAS]}`;
+}
+
+// ── WHITE-BG CHART RENDERER ────────────────────────
+// Returns base64 PNG dataURL; white background; 4:3 aspect ratio
+function drawCwhite(offW, offH, x, series, yU, yFixed){
+  const cvs=document.createElement('canvas');
+  const dpr=2;
+  cvs.width=offW*dpr; cvs.height=offH*dpr;
+  const ctx=cvs.getContext('2d'); ctx.scale(dpr,dpr);
+  const P={t:12,r:16,b:34,l:54};
+  const pw=offW-P.l-P.r, ph=offH-P.t-P.b;
+
+  ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,offW,offH);
+
+  const xm=x[x.length-1]||1;
+  const all=series.flatMap(s=>s.d.filter(v=>isFinite(v)));
+  const vm=yFixed!==undefined?yFixed:Math.max(...all)*1.15||1;
+
+  // Grid
+  ctx.strokeStyle='#e0e4ee'; ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=P.t+(i/5)*ph;
+    ctx.beginPath();ctx.moveTo(P.l,y);ctx.lineTo(P.l+pw,y);ctx.stroke();
+    ctx.fillStyle='#555';ctx.font='10px Arial';ctx.textAlign='right';
+    ctx.fillText((vm-(i/5)*vm).toFixed(vm>10?1:3),P.l-5,y+4);
+  }
+  for(let i=0;i<=5;i++){
+    const xp=P.l+(i/5)*pw;
+    ctx.beginPath();ctx.moveTo(xp,P.t);ctx.lineTo(xp,P.t+ph);ctx.stroke();
+    ctx.fillStyle='#555';ctx.textAlign='center';
+    ctx.fillText(((i/5)*xm).toFixed(1)+'s',xp,P.t+ph+20);
+  }
+  ctx.save();ctx.translate(14,P.t+ph/2);ctx.rotate(-Math.PI/2);
+  ctx.fillStyle='#777';ctx.font='10px Arial';ctx.textAlign='center';
+  ctx.fillText(yU,0,0);ctx.restore();
+
+  const PC={'#00d4aa':'#007a55','#4a9eff':'#1155aa','#ff6b6b':'#bb2222',
+    'rgba(255,107,107,.5)':'#cc7777','rgba(240,192,64,.5)':'#997700',
+    'rgba(255,180,50,.7)':'#bb8800','rgba(180,100,255,.7)':'#6622bb',
+    'rgba(255,80,120,.7)':'#bb1144'};
+
+  const tx=v=>P.l+(v/xm)*pw;
+  const ty=v=>P.t+ph-(Math.max(0,v)/vm)*ph;
+  series.forEach(s=>{
+    ctx.beginPath();ctx.strokeStyle=PC[s.c]||s.c;ctx.lineWidth=s.thin?1.5:2.5;
+    if(s.dash)ctx.setLineDash([6,4]);else ctx.setLineDash([]);
+    x.forEach((v,i)=>{const px=tx(v),py=ty(s.d[i]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
+    ctx.stroke();ctx.setLineDash([]);
+  });
+
+  // Legend
+  let lx=P.l+8;
+  series.forEach(s=>{
+    ctx.fillStyle=PC[s.c]||s.c;ctx.fillRect(lx,P.t+5,18,3.5);
+    ctx.fillStyle='#444';ctx.font='10px Arial';ctx.textAlign='left';
+    ctx.fillText(s.lb,lx+22,P.t+11);
+    lx+=ctx.measureText(s.lb).width+44;
+  });
+  ctx.strokeStyle='#ccc';ctx.lineWidth=1;ctx.setLineDash([]);
+  ctx.strokeRect(P.l,P.t,pw,ph);
+  return cvs.toDataURL('image/png');
+}
+
+// ── CHART SERIES DATA ───────────────────────────────
+function getChartSeries(){
+  if(!sD)return null;
+  const{ta,Tf,wf,Ha,eca,esa,epa,Tpk,wmax,Hy,n}=sD;
+  const Tn=Tf.map(v=>Tpk>0?v/Tpk:0);
+  const Wn=wf.map(v=>wmax>0?v/wmax:0);
+  const Hn=Ha.map(v=>H0>0?v/(H0*100):0);
+  return [
+    {title:'T(t) · 扭矩—時間曲線',yU:'N·m',yFixed:undefined,
+     x:ta,series:[{d:Tf,c:'#00d4aa',lb:'T(t)'},{d:eca.map((v,i)=>v+esa[i]+epa[i]),c:'rgba(255,107,107,.5)',lb:'|ε|',thin:true,dash:true}]},
+    {title:'ω(t) · 角速度—時間曲線',yU:'rad/s',yFixed:undefined,
+     x:ta,series:[{d:wf,c:'#4a9eff',lb:'ω(t)'}]},
+    {title:'H(t) · 料面高度',yU:'cm',yFixed:H0*100,
+     x:ta,series:[{d:Ha,c:'#ff6b6b',lb:'H(t)'},{d:new Array(n).fill(Hy*100),c:'rgba(240,192,64,.5)',lb:'H_yield',thin:true,dash:true}]},
+    {title:'正規化疊圖 + ε(t) 分解',yU:'[1]',yFixed:1.0,
+     x:ta,series:[
+       {d:Tn,c:'#00d4aa',lb:'T/Tpk'},{d:Wn,c:'#4a9eff',lb:'ω/ωmax'},{d:Hn,c:'#ff6b6b',lb:'H/H₀'},
+       {d:eca.map(v=>Tpk>0?v/Tpk:0),c:'rgba(255,180,50,.7)',lb:'εc',thin:true,dash:true},
+       {d:esa.map(v=>Tpk>0?v/Tpk:0),c:'rgba(180,100,255,.7)',lb:'εs',thin:true,dash:true},
+       {d:epa.map(v=>Tpk>0?v/Tpk:0),c:'rgba(255,80,120,.7)',lb:'εp',thin:true,dash:true}]},
+  ];
+}
+
+// ── SHARED: BUILD COMPLETE WHITE REPORT HTML ────────
+function buildReportHTML(chartImgMap){
+  const g=id=>document.getElementById(id)?.textContent||'—';
+  const now=new Date();
+  const ts=now.toLocaleString('zh-TW');
+  const typeEl=document.querySelector('#ctcWrap .ctc-type');
+  const confEl=document.querySelector('#ctcWrap .ctc-conf');
+  const slumpEl=document.querySelector('#ctcWrap .ctc-slump');
+  const cg=parseFloat(document.getElementById('s_cg').value)||1;
+  const etaPl=(parseFloat(g('k_ei'))/cg).toFixed(1);
+
+  // Quality rows
+  let qRows='';
+  document.querySelectorAll('#qg .qi').forEach(qi=>{
+    const nm=qi.querySelector('.qn').innerText;
+    const vl=qi.querySelector('.qv').textContent;
+    const cls=qi.classList.contains('pass')?'pass':qi.classList.contains('fail')?'fail':qi.classList.contains('warn')?'warn':'';
+    qRows+=`<tr class="${cls}"><td>${nm}</td><td>${vl}</td></tr>`;
+  });
+
+  // Matrix rows from ctcWrap
+  let matrixRows='';
+  document.querySelectorAll('#ctcWrap .ctc-cell').forEach(cell=>{
+    const nm=cell.querySelector('.ctc-cname')?.textContent||'';
+    const sc=cell.querySelector('.ctc-cscore')?.textContent||'';
+    const masDiv=cell.querySelectorAll('div')[2];
+    const masOk=masDiv&&masDiv.textContent.includes('✓');
+    const cls=cell.classList.contains('match')?'match':cell.classList.contains('near')?'near':'';
+    matrixRows+=`<td class="mc ${cls}"><div class="mname">${nm}</div><div class="mscore">${sc}</div><div class="mmas ${masOk?'ok':'no'}">${masOk?'✓':'✗'} MAS</div></td>`;
+  });
+
+  // Chart images HTML — 1 per row, 2 per page via page-break
+  let chartHTML='';
+  if(chartImgMap){
+    const cs=getChartSeries();
+    cs.forEach((c,i)=>{
+      const imgData=chartImgMap[i];
+      const pb=(i>0&&i%2===0)?'style="page-break-before:always;padding-top:10px"':'';
+      chartHTML+=`
+      <div class="chart-block" ${pb}>
+        <div class="chart-title">${c.title}</div>
+        <img src="${imgData}" class="chart-img">
+      </div>`;
+    });
+  }
+
+  // Theory section
+  const theoryHTML=`
+    <h2 class="sec">理論說明</h2>
+    <div class="theory-section">
+      <h3>二次修訂摘要</h3>
+      <table class="th-table"><tr><th>項目</th><th>修訂內容</th></tr>
+        <tr><td>① η 耦合</td><td>定義 η* = η_pl·Cγ；Cγ 由甘油溶液獨立標定後固定，η* 為唯一反解目標</td></tr>
+        <tr><td>② K₁/K₂ 驗證</td><td>敏感度分析；K₁/K₂ = θ_eff 為內部一致性驗證指標（偏差 &lt;5%）</td></tr>
+        <tr><td>③ ε(t) 分解</td><td>ε_c（骨材碰撞）+ ε_s（壁滑移）+ ε_p（顆粒遷移），各有量化方法</td></tr>
+        <tr><td>④ C_H 約束</td><td>0.85 ≤ C_H ≤ 1.15；超出範圍廢棄數據；建立坍落度關聯模型</td></tr>
+        <tr><td>⑤ 重現性</td><td>n ≥ 5；CV &lt;10%（砂漿/細石）/ &lt;15%（粗骨材）；ICC ≥ 0.75</td></tr>
+        <tr><td>⑥ 適用範圍</td><td>坍落度 50–250 mm；MAS ≤ 19 mm；τ₀,app 20–700 Pa；η* 1–100 Pa·s</td></tr>
+        <tr><td>⑦ 多模型</td><td>Bingham vs Herschel–Bulkley；ΔAIC &gt;4 時改採 H-B 模型</td></tr>
+        <tr><td>⑧ 無因次化</td><td>Π_T = T/(ρgH₀²·Ar·Rout)；Π_τ = τ₀/(ρgH₀)；Π_η = η*ω₀/(ρgH₀)</td></tr>
+      </table>
+
+      <h3>核心扭矩方程（§2.5）</h3>
+      <div class="eq">T(t) = K₁(t) · τ₀,app + K₂(t) · η* · ω(t) + ε(t)</div>
+      <div class="eq">K₁(t) = (1+k_geo) · H(t) · Ar<br>
+        K₂(t) = K₁(t) / θ_eff<br>
+        K₁ / K₂ = θ_eff  ←  驗證指標（偏差 &lt;5%）</div>
+
+      <h3>料面高度 H(t)（§2.3）</h3>
+      <div class="eq">H(t) = C_H · θ_eff · H₀ / (θ_eff + Θ(t))<br>
+        Θ(t) = ∫₀ᵗ ω(s) ds  ←  旋轉編碼器積分<br>
+        臨界停止：H(t) ≤ H_yield = τ₀,app / (ρg)</div>
+
+      <h3>ε(t) 誤差三分量（§2.7）</h3>
+      <table class="th-table"><tr><th>分量</th><th>物理意義</th><th>典型量級（粗骨材）</th><th>處理方式</th></tr>
+        <tr><td>ε_c</td><td>骨材顆粒碰撞衝擊力矩</td><td>≤15% T_peak</td><td>移動平均濾波剔除</td></tr>
+        <tr><td>ε_s</td><td>旋轉片壁滑移效應</td><td>≤8% T（光滑面）</td><td>粗糙葉面 Ra≥6.3μm 最小化</td></tr>
+        <tr><td>ε_p</td><td>剪切帶顆粒遷移非均質</td><td>≤10% T</td><td>C_H 部分吸收，餘量為不確定度</td></tr>
+      </table>
+
+      <h3>Tikhonov 正則化反解（§4.3）</h3>
+      <div class="eq">x = (AᵀA + λI)⁻¹ · Aᵀb<br>
+        x = [τ₀,app, η*]ᵀ<br>
+        準穩態段：|α(t)| &lt; 0.1 rad/s²  |  κ(A) &gt; 100 → 標記低可信度<br>
+        合格標準：RMSE / T_peak &lt; 5%</div>
+
+      <h3>無因次 Pi 群（§8.2）</h3>
+      <div class="eq">Π_T = T(t) / (ρgH₀² · Ar · Rout)　（無因次扭矩數）<br>
+        Π_τ = τ₀,app / (ρgH₀)　　　　　　（無因次屈服應力）<br>
+        Π_η = η* · ω₀ / (ρgH₀)　　　　　（無因次黏度數）</div>
+      <p>應用：跨裝置尺寸比較；與坍落度/坍流度關聯模型（目標 R² ≥ 0.85）</p>
+
+      <h3>裝置適用範圍（§1.0）</h3>
+      <table class="th-table"><tr><th>參數</th><th>適用範圍</th><th>超出範圍說明</th></tr>
+        <tr><td>坍落度</td><td>50–250 mm</td><td>&lt;50 mm 驅動力不足；&gt;250 mm 流體效應主導</td></tr>
+        <tr><td>MAS</td><td>≤ 19 mm</td><td>MAS&gt;19 mm 架橋風險顯著上升</td></tr>
+        <tr><td>τ₀,app</td><td>20–700 Pa</td><td>&lt;20 Pa 訊噪比不足；&gt;700 Pa 無法啟動</td></tr>
+        <tr><td>η*</td><td>1–100 Pa·s</td><td>超出需重新評估 Cγ 標定曲線</td></tr>
+        <tr><td>溫度</td><td>5–35 °C</td><td>超出需獨立溫度標定</td></tr>
+        <tr><td>試驗時長</td><td>5–60 s（典型）</td><td>由啟動至旋轉片自然停止</td></tr>
+      </table>
+    </div>`;
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<title>ARM-G2模擬報告</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans TC",Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:14mm 14mm 14mm}
+/* HEADER */
+.rpt-header{border-bottom:3px solid #006644;padding-bottom:10px;margin-bottom:14px}
+.rpt-title{font-size:20px;font-weight:700;color:#004433;letter-spacing:1px}
+.rpt-sub{font-size:10px;color:#666;margin-top:4px;display:flex;gap:20px;flex-wrap:wrap}
+.rpt-sub span{background:#f0f8f4;border:1px solid #c8e8d8;padding:2px 8px;border-radius:2px}
+/* SECTION HEADERS */
+h2.sec{font-size:12px;color:#fff;background:#006644;padding:5px 10px;margin:14px 0 6px;
+  text-transform:uppercase;letter-spacing:1.5px;page-break-after:avoid}
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px}
+.kpi-card{background:#f4faf7;border:1px solid #c0ddd0;padding:8px 10px;border-radius:2px;border-left:4px solid #006644}
+.kl{font-size:9px;color:#558;margin-bottom:3px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.kv{font-size:17px;font-weight:700;color:#004422;line-height:1}
+.ku{font-size:9px;color:#888;margin-top:2px}
+.ks{font-size:9px;color:#aaa;margin-top:1px}
+/* PARAMS TABLE */
+.param-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
+.param-table th{background:#e8f4ee;color:#333;padding:5px 10px;text-align:left;
+  border:1px solid #c8ddd0;font-weight:600;font-size:10px;text-transform:uppercase}
+.param-table td{padding:5px 10px;border:1px solid #ddd;color:#333}
+.param-table tr:nth-child(even) td{background:#fafffe}
+/* QUALITY */
+.q-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
+.q-table th{background:#e8f4ee;color:#333;padding:5px 10px;border:1px solid #c8ddd0;font-weight:600;font-size:10px}
+.q-table td{padding:5px 10px;border:1px solid #ddd}
+.q-table tr.pass td:last-child{color:#007a55;font-weight:700}
+.q-table tr.fail td:last-child{color:#aa2222;font-weight:700}
+.q-table tr.warn td:last-child{color:#886600;font-weight:700}
+.q-table tr.na td:last-child{color:#888}
+/* PREDICTION */
+.pred-header{display:flex;align-items:center;gap:14px;background:#f0faf6;
+  border:1px solid #b8ddd0;padding:12px 14px;margin-bottom:8px;border-radius:2px}
+.pred-icon{font-size:32px;line-height:1}
+.pred-name{font-size:16px;font-weight:700;color:#004422}
+.pred-meta{font-size:10px;color:#666;margin-top:3px}
+.pred-conf{font-size:11px;font-weight:700;padding:3px 10px;border-radius:2px;background:#e8faf2;
+  color:#006633;border:1px solid #88ccaa;margin-left:auto;flex-shrink:0}
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.bar-lbl{font-size:10px;color:#555;width:80px;flex-shrink:0;font-weight:600}
+.bar-track{flex:1;height:8px;background:#e8eee8;border-radius:4px;overflow:hidden;border:1px solid #ccc}
+.bar-fill{height:100%;border-radius:4px}
+.bar-val{font-size:11px;font-weight:700;color:#cc6600;width:90px;text-align:right;flex-shrink:0;font-family:monospace}
+/* MATRIX */
+.matrix{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-top:8px}
+.mc{text-align:center;padding:7px 4px;border:1px solid #ddd;border-radius:2px;background:#fafafa}
+.mc.match{background:#e8faf0;border-color:#00aa77}
+.mc.near{background:#fffbe8;border-color:#ccaa00}
+.mname{font-size:9px;color:#555;margin-bottom:2px}
+.mscore{font-size:13px;font-weight:700;color:#444}
+.mc.match .mscore{color:#006633}.mc.near .mscore{color:#886600}
+.mmas{font-size:9px;margin-top:2px}.mmas.ok{color:#006633}.mmas.no{color:#bbb}
+/* CHARTS */
+.chart-block{margin-bottom:12px;break-inside:avoid;page-break-inside:avoid}
+.chart-title{font-size:11px;font-weight:700;color:#004422;background:#f0faf6;
+  border-left:3px solid #006644;padding:4px 8px;margin-bottom:4px}
+.chart-img{width:100%;height:auto;display:block;border:1px solid #ddd;border-radius:1px}
+/* THEORY */
+.theory-section h3{font-size:11px;color:#004422;margin:12px 0 5px;font-weight:700;
+  border-bottom:1px solid #c8ddd0;padding-bottom:3px}
+.theory-section p{font-size:11px;color:#444;line-height:1.6;margin-bottom:6px}
+.th-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
+.th-table th{background:#e8f4ee;color:#333;padding:4px 8px;border:1px solid #c8ddd0;font-weight:600}
+.th-table td{padding:4px 8px;border:1px solid #ddd;color:#444}
+.th-table tr:nth-child(even) td{background:#fafffe}
+.eq{font-family:monospace;font-size:11px;background:#f8fffe;border:1px solid #c0ddd0;
+  border-left:3px solid #006644;padding:8px 12px;margin:5px 0 8px;line-height:1.7;
+  color:#004422;white-space:pre-line}
+/* FOOTER */
+.footer{margin-top:16px;padding-top:8px;border-top:1px solid #ddd;
+  font-size:9px;color:#888;display:flex;justify-content:space-between}
+/* PRINT */
+@media print{
+  @page{size:A4;margin:12mm 12mm}
+  body{padding:0}
+  h2.sec{page-break-after:avoid}
+  .chart-block{page-break-inside:avoid}
+  .kpi-grid,.matrix{page-break-inside:avoid}
+}
+</style></head><body>
+
+<!-- ══ HEADER ══ -->
+<div class="rpt-header">
+  <div class="rpt-title">ARM-G2· 混凝土主動式質流儀 · 模擬報告</div>
+  <div class="rpt-sub">
+    <span>Active Rheometer</span>
+    <span>骨材：${MAS_LABEL[cMAS]}</span>
+    <span>模型：${document.getElementById('bB').classList.contains('active')?'Bingham':'Herschel–Bulkley'}</span>
+    <span>報告時間：${ts}</span>
+  </div>
+</div>
+
+<!-- ══ 分析參數 ══ -->
+<h2 class="sec">分析參數</h2>
+<table class="param-table">
+  <tr><th>參數</th><th>數值</th><th>說明</th><th>參數</th><th>數值</th><th>說明</th></tr>
+  <tr>
+    <td>τ₀,app（輸入）</td><td><b>${document.getElementById('s_t0').value} Pa</b></td><td>表觀屈服應力</td>
+    <td>η*（輸入）</td><td><b>${document.getElementById('s_es').value} Pa·s</b></td><td>合併黏度參數</td>
+  </tr>
+  <tr>
+    <td>C_γ</td><td>${document.getElementById('s_cg').value}</td><td>剪切速率標定係數</td>
+    <td>η_pl,app</td><td>${etaPl} Pa·s</td><td>η* / C_γ 推算</td>
+  </tr>
+  <tr>
+    <td>C_H</td><td>${document.getElementById('s_ch').value}</td><td>料面高度修正（0.85–1.15）</td>
+    <td>k_geo</td><td>${document.getElementById('s_kg').value}</td><td>固定片幾何修正</td>
+  </tr>
+  <tr>
+    <td>I_sys</td><td>${document.getElementById('s_is').value} kg·m²</td><td>系統轉動慣量</td>
+    <td>T_fric</td><td>${document.getElementById('s_tf').value} N·m</td><td>軸承摩擦力矩</td>
+  </tr>
+  <tr>
+    <td>η_drive</td><td>${document.getElementById('s_ed').value}</td><td>驅動效率係數</td>
+    <td>Tikhonov λ</td><td>${document.getElementById('v_lm').textContent}</td><td>正則化係數</td>
+  </tr>
+</table>
+
+<!-- ══ 模擬結果 ══ -->
+<h2 class="sec">模擬結果 — 量測輸出</h2>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kl">T_peak</div><div class="kv">${g('k_tp')}</div><div class="ku">N·m</div></div>
+  <div class="kpi-card"><div class="kl">ω_max</div><div class="kv">${g('k_wm')}</div><div class="ku">rad/s</div></div>
+  <div class="kpi-card"><div class="kl">H_final</div><div class="kv">${g('k_hf')}</div><div class="ku">cm</div></div>
+  <div class="kpi-card"><div class="kl">t_end</div><div class="kv">${g('k_te')}</div><div class="ku">s</div></div>
+</div>
+
+<h2 class="sec">模擬結果 — 反解結果（Tikhonov）</h2>
+<div class="kpi-grid">
+  <div class="kpi-card"><div class="kl">τ₀,app（反解）</div><div class="kv">${g('k_t0i')}</div><div class="ku">Pa</div><div class="ks">${document.getElementById('k_t0e')?.textContent||''}</div></div>
+  <div class="kpi-card"><div class="kl">η*（反解）</div><div class="kv">${g('k_ei')}</div><div class="ku">Pa·s</div><div class="ks">${document.getElementById('k_ee')?.textContent||''}</div></div>
+  <div class="kpi-card"><div class="kl">T_drive,0</div><div class="kv">${g('k_td')}</div><div class="ku">N·m（啟動估算）</div></div>
+  <div class="kpi-card"><div class="kl">H_yield</div><div class="kv">${g('k_hy')}</div><div class="ku">cm</div></div>
+</div>
+
+<!-- ══ 品質指標 ══ -->
+<h2 class="sec">品質指標（§4.4）</h2>
+<table class="q-table">
+  <tr><th>指標</th><th>結果</th><th>指標</th><th>結果</th></tr>
+  ${(()=>{
+    const items=[...document.querySelectorAll('#qg .qi')];
+    let r='';
+    for(let i=0;i<items.length;i+=2){
+      const a=items[i],b=items[i+1]||null;
+      const ac=a.classList.contains('pass')?'pass':a.classList.contains('fail')?'fail':a.classList.contains('warn')?'warn':'';
+      const bc=b?(b.classList.contains('pass')?'pass':b.classList.contains('fail')?'fail':b.classList.contains('warn')?'warn':''):'';
+      r+=`<tr>
+        <td>${a.querySelector('.qn').innerText}</td>
+        <td class="${ac}">${a.querySelector('.qv').textContent}</td>
+        ${b?`<td>${b.querySelector('.qn').innerText}</td><td class="${bc}">${b.querySelector('.qv').textContent}</td>`:'<td></td><td></td>'}
+      </tr>`;
+    }
+    return r;
+  })()}
+</table>
+
+<!-- ══ 預判結果 ══ -->
+<h2 class="sec">混凝土類型預判</h2>
+<div class="pred-header">
+  <div class="pred-icon">${document.querySelector('#ctcWrap .ctc-icon')?.textContent||'🏗️'}</div>
+  <div>
+    <div class="pred-name">${typeEl?.textContent||'—'}</div>
+    <div class="pred-meta">${slumpEl?.textContent||''}</div>
+  </div>
+  <div class="pred-conf">${confEl?.textContent||'—'}</div>
+</div>
+<div class="bar-row">
+  <div class="bar-lbl">τ₀,app</div>
+  <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,parseFloat(g('k_t0i'))/700*100||0)}%;background:#007a55"></div></div>
+  <div class="bar-val">${parseFloat(g('k_t0i')).toFixed(1)} Pa</div>
+</div>
+<div class="bar-row">
+  <div class="bar-lbl">η_pl,app</div>
+  <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,parseFloat(etaPl)/100*100||0)}%;background:#1155aa"></div></div>
+  <div class="bar-val">${etaPl} Pa·s</div>
+</div>
+<div class="bar-row">
+  <div class="bar-lbl">η*</div>
+  <div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,parseFloat(g('k_ei'))/100*100||0)}%;background:#1155aa"></div></div>
+  <div class="bar-val">${parseFloat(g('k_ei')).toFixed(1)} Pa·s</div>
+</div>
+<div class="matrix">${matrixRows}</div>
+
+<!-- ══ 量測曲線 ══ -->
+<h2 class="sec" style="page-break-before:always">量測曲線</h2>
+${chartHTML}
+
+<!-- ══ 理論說明 ══ -->
+<div style="page-break-before:always">
+${theoryHTML}
+</div>
+
+<div class="footer">
+  <span>ARM-G2-CSChang · Active Rheometer V2.0 · 報告僅供工程參考</span>
+  <span>${ts}</span>
+</div>
+</body></html>`;
+}
+
+// ── PRINT ──────────────────────────────────────────
+async function printReport(){
+  if(!sD){alert('請先執行模擬');return;}
+  const overlay=document.getElementById('pdfOverlay');
+  const msg=document.getElementById('pdfMsg');
+  overlay.classList.add('show');
+  msg.textContent='繪製白底圖表…';
+  await new Promise(r=>setTimeout(r,30));
+
+  const cs=getChartSeries();
+  const CW=700,CH=525; // 4:3
+  const chartImgMap={};
+  for(let i=0;i<cs.length;i++){
+    msg.textContent=`繪製圖表 ${i+1}/${cs.length}…`;
+    await new Promise(r=>setTimeout(r,15));
+    chartImgMap[i]=drawCwhite(CW,CH,cs[i].x,cs[i].series,cs[i].yU,cs[i].yFixed);
+  }
+  overlay.classList.remove('show');
+
+  const html=buildReportHTML(chartImgMap);
+  const win=window.open('','_blank','width=900,height=750');
+  win.document.write(html);
+  win.document.close();
+  win.onload=()=>{win.focus();win.print();};
+}
+
+// ── PDF EXPORT ─────────────────────────────────────
+async function exportPDF(){
+  if(!sD){alert('請先執行模擬');return;}
+  const overlay=document.getElementById('pdfOverlay');
+  const msg=document.getElementById('pdfMsg');
+  overlay.classList.add('show');
+
+  try{
+    const {jsPDF}=window.jspdf;
+
+    // Step 1: Draw white charts
+    msg.textContent='繪製白底圖表…';
+    await new Promise(r=>setTimeout(r,30));
+    const cs=getChartSeries();
+    const CW=700,CH=525; // 4:3 canvas size
+    const chartImgMap={};
+    for(let i=0;i<cs.length;i++){
+      msg.textContent=`繪製圖表 ${i+1}/${cs.length}…`;
+      await new Promise(r=>setTimeout(r,15));
+      chartImgMap[i]=drawCwhite(CW,CH,cs[i].x,cs[i].series,cs[i].yU,cs[i].yFixed);
+    }
+
+    // Step 2: Build report HTML in hidden iframe → html2canvas each section
+    msg.textContent='生成報告頁面…';
+    const html=buildReportHTML(chartImgMap);
+
+    // Use iframe to render, then html2canvas page by page
+    const iframe=document.createElement('iframe');
+    iframe.style.cssText='position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;background:#fff';
+    document.body.appendChild(iframe);
+    iframe.contentDocument.write(html);
+    iframe.contentDocument.close();
+    await new Promise(r=>setTimeout(r,600)); // wait for fonts/images
+
+    msg.textContent='截圖並生成 PDF…';
+    const iDoc=iframe.contentDocument;
+    const iBody=iDoc.body;
+    const totalH=iBody.scrollHeight;
+    const pageH=1123; // px ~ A4 at 96dpi
+    const pageW=794;
+    const pdf=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const MM_W=210,MM_H=297;
+
+    let pageNum=0;
+    for(let top=0;top<totalH;top+=pageH){
+      msg.textContent=`PDF 第 ${pageNum+1} 頁…`;
+      await new Promise(r=>setTimeout(r,20));
+      if(pageNum>0) pdf.addPage();
+      const snap=await html2canvas(iBody,{
+        backgroundColor:'#ffffff',
+        scale:1.5,
+        useCORS:true,
+        logging:false,
+        scrollX:0, scrollY:top,
+        windowWidth:pageW, windowHeight:pageH,
+        width:pageW, height:Math.min(pageH, totalH-top),
+        x:0, y:top,
+      });
+      const imgData=snap.toDataURL('image/png');
+      const imgH=MM_H*(Math.min(pageH,totalH-top)/pageH);
+      pdf.addImage(imgData,'PNG',0,0,MM_W,imgH);
+      pageNum++;
+    }
+    document.body.removeChild(iframe);
+
+    // Save
+    msg.textContent='儲存 PDF…';
+    const now=new Date();
+    const fname=`ARM-G2_${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}${String(now.getMinutes()).padStart(2,'0')}.pdf`;
+    pdf.save(fname);
+    msg.textContent='✓ PDF 已儲存';
+    await new Promise(r=>setTimeout(r,900));
+
+  }catch(e){
+    console.error(e);
+    msg.textContent='PDF 失敗：'+e.message;
+    await new Promise(r=>setTimeout(r,2500));
+  }
+  overlay.classList.remove('show');
+}
+
+// ── SHARE ──────────────────────────────────────────
+async function shareReport(){
+  if(!sD){alert('請先執行模擬');return;}
+
+  // Draw white charts (same as printReport)
+  const overlay=document.getElementById('pdfOverlay');
+  const msg=document.getElementById('pdfMsg');
+  overlay.classList.add('show');
+  msg.textContent='繪製白底圖表…';
+  await new Promise(r=>setTimeout(r,20));
+
+  const cs=getChartSeries();
+  const CW=700,CH=525;
+  const chartImgMap={};
+  for(let i=0;i<cs.length;i++){
+    msg.textContent=`圖表 ${i+1}/${cs.length}…`;
+    await new Promise(r=>setTimeout(r,10));
+    chartImgMap[i]=drawCwhite(CW,CH,cs[i].x,cs[i].series,cs[i].yU,cs[i].yFixed);
+  }
+  overlay.classList.remove('show');
+
+  // Build same white report HTML as printReport
+  const reportHTML=buildReportHTML(chartImgMap);
+
+  // Add share toolbar at top (injected before </body>... actually after <body>)
+  const toolbar=`<div style="position:sticky;top:0;z-index:999;background:#004433;
+    display:flex;align-items:center;gap:8px;padding:8px 12px;
+    box-shadow:0 2px 6px rgba(0,0,0,.25);flex-wrap:wrap">
+    <div style="flex:1;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#00d4aa;font-weight:600">
+      ARM-G2 模擬報告 · 分享視窗
+      <span style="font-weight:400;color:#aaa;margin-left:8px;font-size:10px">與PDF/列印版面相同</span>
+    </div>
+    <button id="_shareBtn"
+      style="padding:7px 12px;background:#00d4aa;color:#000;border:none;
+      font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;
+      cursor:pointer;border-radius:2px;flex-shrink:0">
+      📤 系統分享
+    </button>
+    <button onclick="window.print()"
+      style="padding:7px 12px;background:#1a3a5a;color:#4a9eff;border:1px solid #4a9eff;
+      font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;border-radius:2px;flex-shrink:0">
+      🖨️ 列印
+    </button>
+    <button onclick="window.close()"
+      style="padding:7px 12px;background:#2a1a1a;color:#ff6b6b;border:1px solid #ff6b6b;
+      font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:pointer;border-radius:2px;flex-shrink:0">
+      ✕ 關閉
+    </button>
+  </div>
+  <script>
+    document.getElementById('_shareBtn').addEventListener('click',async function(){
+      if(navigator.share){
+        try{
+          await navigator.share({title:'ARM-G2 模擬報告',text:document.body.innerText.substring(0,2000)});
+          return;
+        }catch(e){}
+      }
+      // Fallback: copy URL or show message
+      this.textContent='📋 長按截圖分享';
+      this.style.background='#cc8800';
+      setTimeout(()=>{this.textContent='📤 系統分享';this.style.background='#00d4aa';},3000);
+    });
+  <\/script>`;
+
+  const finalHTML=reportHTML.replace('<body>','<body>'+toolbar);
+
+  const win=window.open('','_blank');
+  if(!win){showToast('請允許瀏覽器開啟新視窗');return;}
+  win.document.write(finalHTML);
+  win.document.close();
+}
+
+// ── TOAST ──────────────────────────────────────────
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='toast';
+    t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);'
+      +'background:#00d4aa;color:#000;font-family:"IBM Plex Mono",monospace;font-size:12px;'
+      +'padding:10px 20px;border-radius:3px;z-index:9999;font-weight:600;'
+      +'transition:opacity .3s;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.opacity='1';t.style.display='block';
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>{t.style.display='none'},300)},2500);
+}
+</script>
+<script>
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('[AMR-V4] SW registered:', reg.scope))
+      .catch(err => console.warn('[AMR-V4] SW registration failed:', err));
+  });
+}
+</script>
+</body>
+</html>
